@@ -70,15 +70,6 @@
                         🌿 Explorar Marketplace de Protocolos
                     </a>
                 </div>
-
-                <div style="text-align: center; margin-top: 1.25rem; border-top: 1px dashed var(--border-color); padding-top: 1rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
-                    <button type="button" onclick="resetPlatformToFreshState()" class="btn-action btn-action-secondary" style="font-size: 0.76rem; padding: 0.35rem 0.75rem; color: var(--terracotta); border-color: rgba(193, 123, 93, 0.4);" title="Limpar todos os dados mockados para criar tudo do zero">
-                        🧹 Zerar Plataforma (Iniciar do Zero)
-                    </button>
-                    <button type="button" onclick="restoreDemoSeedData()" class="btn-action btn-action-secondary" style="font-size: 0.76rem; padding: 0.35rem 0.75rem; color: var(--primary-olive); border-color: rgba(96, 115, 97, 0.4);" title="Restaurar dados de demonstração">
-                        🔄 Restaurar Dados Demo
-                    </button>
-                </div>
             </form>
         </div>
 
@@ -5405,27 +5396,12 @@
         // Execute dynamic branding check immediately to avoid flash of unbranded style
         setTimeout(applySubdomainBranding, 0);
         let saasSubscriptionStatus = 'trial'; // 'trial', 'active', 'suspended'
-        let currentPatientName = 'Ana Paula Silva';
+        let currentPatientName = '';
         let purchasedProducts = [];
 
-        let productsList = safeParseJSON('amazing_franklin_products_list', null) || [
-            { id: 'prod-detox', title: 'Protocolo Express Detox', price: 97.00, duration: 14, tag: 'DETOX', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80', desc: 'Ideal para desinflamar o corpo, melhorar a digestão e eliminar a retenção de líquidos acumulados de forma rápida.', fileUrl: 'Protocolo_Express_Detox.pdf', isPublic: true },
-            { id: 'prod-fatburn', title: 'Desafio Emagrecimento Definitivo', price: 197.00, duration: 30, tag: 'QUEIMA DE GORDURA', image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=400&q=80', desc: 'Plano focado em reeducação metabólica acelerada. Perfeito para queima de gordura e tonificação saudável.', fileUrl: 'Desafio_Emagrecimento_Definitivo.pdf', isPublic: true },
-            { id: 'prod-vitality', title: 'Nutrição Preventiva & Longevidade', price: 247.00, duration: 60, tag: 'VITALIDADE', image: 'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=400&q=80', desc: 'Melhore a imunidade, aumente a disposição diária e controle os biomarcadores inflamados de envelhecimento.', fileUrl: 'Nutricao_Preventiva_Longevidade.pdf', isPublic: false }
-        ];
-        localStorage.setItem('amazing_franklin_products_list', JSON.stringify(productsList));
+        let productsList = safeParseJSON('amazing_franklin_products_list', []);
 
-        let patientExamsList = [
-            {
-                id: "exam-init-1",
-                patientName: "Ana Paula Silva",
-                title: "Exame de Sangue - Junho 2026",
-                fileUrl: "Exame_Sangue_AnaPaula.pdf",
-                uploadedAt: "10 de Junho de 2026",
-                status: "pending",
-                notes: ""
-            }
-        ];
+        let patientExamsList = safeParseJSON('amazing_franklin_patient_exams', []);
 
         let scheduleSettings = safeParseJSON('amazing_franklin_schedule_settings', {
             duration: 75,
@@ -5435,353 +5411,27 @@
             workEnd: "18:00"
         });
 
-        let appointmentsList = safeParseJSON('amazing_franklin_appointments_list', [
-            {
-                id: "appt-1",
-                patientName: "Ana Paula Silva",
-                date: "25 de Junho de 2026",
-                time: "14:00",
-                duration: 75,
-                type: "Online",
-                location: "Telemedicina (Link Único)",
-                link: "https://meet.jit.si/TatiCardoso-AnaPaula-25Jun",
-                status: "Confirmado"
-            },
-            {
-                id: "appt-2",
-                patientName: "Carlos Henrique Ramos",
-                date: "22 de Junho de 2026",
-                time: "09:30",
-                duration: 75,
-                type: "Presencial",
-                location: "Consultório Principal - Av. Paulista, 1000",
-                link: "",
-                status: "Confirmado"
-            },
-            {
-                id: "appt-3",
-                patientName: "Beatriz Albuquerque",
-                date: "23 de Junho de 2026",
-                time: "15:00",
-                duration: 60,
-                type: "Online",
-                location: "Telemedicina (Link Único)",
-                link: "https://meet.jit.si/TatiCardoso-Beatriz-23Jun",
-                status: "Confirmado"
-            },
-            {
-                id: "appt-4",
-                patientName: "Tatiane Cardoso Viana dos Santos",
-                date: "24 de Junho de 2026",
-                time: "10:00",
-                duration: 75,
-                type: "Presencial",
-                location: "Clínica Jardins - Al. Santos, 450",
-                link: "",
-                status: "Confirmado"
-            },
-            {
-                id: "appt-5",
-                patientName: "Frederico Augusto Moreira da Encarnação",
-                date: "26 de Junho de 2026",
-                time: "11:00",
-                duration: 75,
-                type: "Online",
-                location: "Telemedicina (Link Único)",
-                link: "https://meet.jit.si/TatiCardoso-Frederico-26Jun",
-                status: "Confirmado"
-            }
-        ]);
-        localStorage.setItem('amazing_franklin_appointments_list', JSON.stringify(appointmentsList));
-
-        let patientNotifications = safeParseJSON('amazing_franklin_patient_notifications', [
-            {
-                id: "notif-init-1",
-                patientName: "Ana Paula Silva",
-                type: "rescheduled",
-                title: "Consulta Reagendada",
-                message: "Sua consulta com a Dra. Tati Cardoso foi reagendada para 25 de Junho de 2026 às 14:00 (Telemedicina).",
-                dateDetails: "25 de Junho de 2026 às 14:00 (Telemedicina)",
-                timestamp: Date.now(),
-                read: false
-            }
-        ]);
-        localStorage.setItem('amazing_franklin_patient_notifications', JSON.stringify(patientNotifications));
+        let appointmentsList = safeParseJSON('amazing_franklin_appointments_list', []);
+        let patientNotifications = safeParseJSON('amazing_franklin_patient_notifications', []);
         
         let nutriProfile = safeParseJSON('amazing_franklin_nutri_profile', {
-            name: "Dra. Tati Cardoso",
-            crn: "CRN-3 48291/SP",
-            specialty: "Nutrição Clínica & Funcional",
-            signature: "Tatiane Cardoso",
-            stampName: "Dra. Tatiane Cardoso",
-            stampTitle: "Nutricionista Clínica",
-            photoUrl: "dra_tati_portrait.png",
+            name: "Nutricionista Responsável",
+            crn: "CRN Ativo",
+            specialty: "Nutrição Clínica",
+            signature: "",
+            stampName: "Nutricionista Responsável",
+            stampTitle: "Nutrição Clínica",
+            photoUrl: "logo_clean.png",
             logoUrl: "logo_clean.png"
         });
 
-        let patientPrescriptions = [
-            {
-                id: "presc-1",
-                patientName: "Ana Paula Silva",
-                formula: "L-Carnitina 500mg, Cafeína 100mg - 60 cápsulas",
-                status: "quoted",
-                date: "15 de Junho de 2026",
-                quotes: [
-                    {
-                        id: "quote-1-1",
-                        supplierName: "TatiFarma Manipulação",
-                        price: 85.00,
-                        shipping: 12.00,
-                        days: 3,
-                        status: "submitted"
-                    },
-                    {
-                        id: "quote-1-2",
-                        supplierName: "BioVida Manipulação",
-                        price: 79.90,
-                        shipping: 15.00,
-                        days: 2,
-                        status: "submitted"
-                    }
-                ]
-            }
-        ];
+        let patientPrescriptions = safeParseJSON('amazing_franklin_patient_prescriptions', []);
+        let supplierOrders = safeParseJSON('amazing_franklin_supplier_orders', []);
+        let supplierAccounts = safeParseJSON('amazing_franklin_supplier_accounts', []);
+        let nutriAccounts = safeParseJSON('amazing_franklin_all_nutris', []);
+        let supplierReviews = safeParseJSON('amazing_franklin_supplier_reviews', []);
 
-        let supplierOrders = [
-            {
-                id: "ped-1",
-                date: "16 de Junho de 2026",
-                formula: "L-Carnitina 500mg, Cafeína 100mg - 60 cápsulas",
-                totalAmount: 94.90,
-                commission: 9.49,
-                payout: 85.41,
-                status: "Pago",
-                supplierName: "BioVida Manipulação"
-            }
-        ];
-
-        let supplierAccounts = [
-            {
-                name: "BioVida Manipulação",
-                email: "biovida@exemplo.com",
-                password: "123",
-                cnpj: "12.345.678/0001-99",
-                crf: "CRF-SP 98765",
-                phone: "(11) 97777-8888",
-                address: { cep: "01311-200", street: "Av. Paulista", number: "1000", city: "São Paulo - SP" },
-                status: "active",
-                rating: 4.8,
-                reviewsCount: 2
-            },
-            {
-                name: "TatiFarma Manipulação",
-                email: "tatifarma@exemplo.com",
-                password: "123",
-                cnpj: "98.765.432/0001-11",
-                crf: "CRF-SP 12345",
-                phone: "(11) 96666-5555",
-                address: { cep: "04571-010", street: "Av. Engenheiro Luís Carlos Berrini", number: "500", city: "São Paulo - SP" },
-                status: "active",
-                rating: 5.0,
-                reviewsCount: 1
-            },
-            {
-                name: "Farmácia Parceira",
-                email: "farmacia@parceira.com",
-                password: "123",
-                cnpj: "55.666.777/0001-88",
-                crf: "CRF-SP 44444",
-                phone: "(11) 95555-4444",
-                address: { cep: "01310-100", street: "Av. Paulista", number: "1500", city: "São Paulo - SP" },
-                status: "active",
-                rating: 4.5,
-                reviewsCount: 0
-            }
-        ];
-
-        let nutriAccounts = [];
-
-        let supplierReviews = [
-            {
-                id: "rev-1",
-                supplierName: "BioVida Manipulação",
-                patientName: "Ana Paula Silva",
-                rating: 5,
-                comment: "Excelente atendimento! O medicamento chegou super rápido e a embalagem veio perfeitamente lacrada.",
-                date: "17 de Junho de 2026"
-            },
-            {
-                id: "rev-2",
-                supplierName: "BioVida Manipulação",
-                patientName: "M. S. Oliveira",
-                rating: 4,
-                comment: "Preço muito bom em comparação com outras farmácias da região. Recomendo.",
-                date: "10 de Junho de 2026"
-            },
-            {
-                id: "rev-3",
-                supplierName: "TatiFarma Manipulação",
-                patientName: "Lucas Lima",
-                rating: 5,
-                comment: "Farmácia de extrema confiança, prescrição validada pelo farmacêutico e entrega no prazo correto.",
-                date: "12 de Junho de 2026"
-            }
-        ];
-
-        let patientsList = [
-            {
-                name: "Ana Paula Silva",
-                createdAt: "10 de Janeiro de 2026",
-                lastConsult: "18 de Maio de 2026",
-                status: "Ativo (Consultório)",
-                objective: "Perda de Peso",
-                email: "ana.silva@exemplo.com",
-                phone: "(11) 98888-7777",
-                recordings: [
-                    {
-                        id: "rec-init-1",
-                        date: "18 de Maio de 2026",
-                        duration: "42:15",
-                        videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-nutritionist-talking-to-a-client-on-video-call-41885-large.mp4"
-                    }
-                ],
-                history: [
-                    {
-                        date: "15 de Janeiro de 2026",
-                        weight: 70.2,
-                        bodyFat: 24.5,
-                        muscleMass: 28.3,
-                        waterPct: 53.0,
-                        visceralFat: 5,
-                        tmb: 1420,
-                        diet: "Adaptação Metabólica & Hidratação V1",
-                        dietDetails: "Plano com 1.600 kcal/dia. Foco em equilíbrio hidroeletrolítico, ingestão de 3L de água diários, redução de sódio e aumento de fibras solúveis (aveia, psyllium).",
-                        dietPdf: "Plano_Alimentar_Adaptacao_V1.pdf",
-                        formula: "Coenzima Q10 100mg, Vitamina D3 2.000UI, Magnésio Dimalato 250mg - 60 cápsulas (Tomar 1 cápsula após o almoço)",
-                        formulaStatus: "Cotado e Manipulado",
-                        notes: "Início do acompanhamento nutricional. Paciente apresenta queixas de cansaço e retenção de líquidos. Foco inicial em aumentar a ingestão de água para 3L/dia e regular o sono.",
-                        photoBefore: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
-                        photoAfter: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
-                        circunferencias: {
-                            neck: 35.0,
-                            chest: 94.0,
-                            'arm-r': 31.0,
-                            'arm-l': 31.0,
-                            waist: 77.0,
-                            hip: 100.0,
-                            'thigh-r': 57.5,
-                            'thigh-l': 57.2,
-                            'calf-r': 37.2,
-                            'calf-l': 37.0
-                        }
-                    },
-                    {
-                        date: "10 de Março de 2026",
-                        weight: 69.1,
-                        bodyFat: 23.6,
-                        muscleMass: 28.5,
-                        waterPct: 53.8,
-                        visceralFat: 4,
-                        tmb: 1435,
-                        diet: "Queima de Gordura & Aceleração V2",
-                        dietDetails: "Plano com 1.450 kcal/dia com ciclagem de carboidratos em dias de treino intenso. Café da manhã com ovos mexidos e chá verde antioxidante.",
-                        dietPdf: "Plano_Alimentar_QueimaGordura_V2.pdf",
-                        formula: "Picolinato de Cromo 200mcg, Berberina 300mg, Extrato de Chá Verde 250mg - 60 cápsulas (Tomar 1 dose 30 min antes do almoço e jantar)",
-                        formulaStatus: "Cotado e Manipulado",
-                        notes: "Excelente retorno. Paciente relata melhora na retenção hídrica e sono mais reparador. Ajustamos o consumo de carboidratos complexos no almoço e aumentamos a intensidade dos treinos.",
-                        photoBefore: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
-                        photoAfter: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80",
-                        circunferencias: {
-                            neck: 34.6,
-                            chest: 93.0,
-                            'arm-r': 30.7,
-                            'arm-l': 30.6,
-                            waist: 75.8,
-                            hip: 99.0,
-                            'thigh-r': 56.8,
-                            'thigh-l': 56.5,
-                            'calf-r': 37.0,
-                            'calf-l': 36.8
-                        }
-                    },
-                    {
-                        date: "18 de Maio de 2026",
-                        weight: 68.4,
-                        bodyFat: 22.4,
-                        muscleMass: 28.9,
-                        waterPct: 54.2,
-                        visceralFat: 4,
-                        tmb: 1450,
-                        diet: "Hipertrofia & Definição V3",
-                        dietDetails: "Plano com 1.750 kcal/dia com aporte aumentado de proteínas (2.0g/kg). Introdução de creatina pós-treino e ceia proteica para recuperação muscular.",
-                        dietPdf: "Plano_Alimentar_Hipertrofia_V3.pdf",
-                        formula: "L-Carnitina 500mg, Cafeína Anidra 100mg, Beta-Alanina 1.5g - 60 cápsulas (Tomar 1 dose 30 min antes do treino de força)",
-                        formulaStatus: "Cotações Disponíveis",
-                        notes: "Paciente evoluindo muito bem, mantendo a constância nos treinos aeróbicos e boa adesão ao plano de substituições no café da manhã. Redução expressiva de dobras cutâneas no abdômen.",
-                        photoBefore: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
-                        photoAfter: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80",
-                        circunferencias: {
-                            neck: 34.2,
-                            chest: 92.0,
-                            'arm-r': 30.5,
-                            'arm-l': 30.4,
-                            waist: 74.5,
-                            hip: 98.0,
-                            'thigh-r': 56.2,
-                            'thigh-l': 56.0,
-                            'calf-r': 36.8,
-                            'calf-l': 36.6
-                        }
-                    }
-                ]
-            },
-            {
-                name: "Carlos Henrique Ramos",
-                createdAt: "01 de Junho de 2026",
-                lastConsult: "05 de Junho de 2026",
-                status: "Mentoria VIP",
-                objective: "Hipertrofia",
-                email: "carlos.ramos@exemplo.com",
-                phone: "(11) 97777-6666",
-                history: [
-                    {
-                        date: "05 de Junho de 2026",
-                        weight: 82.5,
-                        bodyFat: 14.2,
-                        muscleMass: 40.1,
-                        waterPct: 60.5,
-                        visceralFat: 6,
-                        tmb: 1850,
-                        diet: "Hipertrofia & Definição V4",
-                        notes: "Carlos iniciou com foco em hipertrofia pura. Boa resposta ao treino de força e dieta hipercalórica. Excelente adesão ao plano inicial.",
-                        photoBefore: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80",
-                        photoAfter: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80",
-                        circunferencias: {
-                            neck: 38.5,
-                            chest: 104.0,
-                            'arm-r': 38.0,
-                            'arm-l': 37.8,
-                            waist: 82.0,
-                            hip: 99.0,
-                            'thigh-r': 60.2,
-                            'thigh-l': 59.8,
-                            'calf-r': 39.5,
-                            'calf-l': 39.3
-                        }
-                    }
-                ]
-            },
-            {
-                name: "Beatriz Albuquerque",
-                createdAt: "14 de Junho de 2026",
-                lastConsult: "-",
-                status: "Novo Paciente",
-                objective: "Clínico",
-                email: "beatriz.albu@exemplo.com",
-                phone: "(11) 96666-5555",
-                history: []
-            }
-        ];
+        let patientsList = safeParseJSON('amazing_franklin_patients_list', []);
 
         let objectiveOptions = [
             "Perda de Peso",
@@ -5800,44 +5450,41 @@
         ];
         
         let patientData = {
-            name: "Ana Paula Silva",
+            name: "Novo Paciente",
+            email: "",
+            phone: "",
+            activeNutri: null,
             address: null,
-            months: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio"],
-            peso: [70.2, 69.8, 69.1, 68.7, 68.4],
-            gordura: [24.5, 24.1, 23.6, 22.9, 22.4],
-            massa: [28.3, 28.4, 28.5, 28.7, 28.9],
-            agua: 54.2,
-            gorduraVisceral: 4,
-            tmb: 1450,
-            fotoAntes: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
-            fotoDepois: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80",
-            notes: "Paciente evoluindo muito bem, mantendo a constância nos treinos aeróbicos e boa adesão ao plano de substituições no café da manhã.",
-            dietaAtiva: "Hipertrofia & Definição V3",
-            proximaConsulta: "22 de Junho às 14:00",
+            months: [],
+            peso: [],
+            gordura: [],
+            massa: [],
+            agua: 0,
+            gorduraVisceral: 0,
+            tmb: 0,
+            fotoAntes: "",
+            fotoDepois: "",
+            notes: "",
+            dietaAtiva: "",
+            proximaConsulta: "--",
             circunferencias: {
-                neck: 34.2,
-                chest: 92.0,
-                'arm-r': 30.5,
-                'arm-l': 30.4,
-                waist: 74.5,
-                hip: 98.0,
-                'thigh-r': 56.2,
-                'thigh-l': 56.0,
-                'calf-r': 36.8,
-                'calf-l': 36.6
-            }
+                neck: 0,
+                chest: 0,
+                'arm-r': 0,
+                'arm-l': 0,
+                waist: 0,
+                hip: 0,
+                'thigh-r': 0,
+                'thigh-l': 0,
+                'calf-r': 0,
+                'calf-l': 0
+            },
+            history: []
         };
 
         let chatMessages = {
-            paciente: [
-                { sender: 'received', text: 'Olá, Ana Paula! Seja bem-vinda ao seu canal direto de dúvidas. Pode nos enviar qualquer pergunta sobre o seu plano alimentar, receitas ou suplementação. Respondemos o mais rápido possível!' },
-                { sender: 'sent', text: 'Olá! Tenho uma dúvida sobre o café da manhã. Posso substituir a quinoa por aveia em flocos finos?' },
-                { sender: 'received', text: 'Pode sim! A equivalência calórica é próxima. Recomendo usar 2 colheres de sopa cheias de aveia para substituir a porção de quinoa do seu plano. Fica ótimo!' }
-            ],
-            nutri: [
-                { sender: 'received', text: 'Dra. Tati, a paciente Ana Paula enviou uma dúvida.' },
-                { sender: 'sent', text: 'Olá, Ana! Verifiquei sua dúvida. Pode substituir por aveia sim.' }
-            ]
+            paciente: [],
+            nutri: []
         };
 
         // Authentication Role Switching Logic
@@ -5852,13 +5499,14 @@
             const loginEmail = document.getElementById('login-email');
             const desc2FA = document.getElementById('lbl-2fa-desc');
 
+            if (loginEmail) loginEmail.value = ""; 
+
             if (role === 'paciente') {
                 if (btnPaciente) btnPaciente.classList.add('active');
                 if (btnNutri) btnNutri.classList.remove('active');
                 if (btnSupplier) btnSupplier.classList.remove('active');
                 if (btnAdmin) btnAdmin.classList.remove('active');
                 if (lblUser) lblUser.innerText = currentLang === 'pt' ? "E-mail do Paciente" : currentLang === 'en' ? "Patient Email" : "Correo del Paciente";
-                if (loginEmail) loginEmail.value = "ana.silva@exemplo.com";
                 if (desc2FA) desc2FA.innerText = currentLang === 'pt' ? "Enviamos um código de segurança de 6 dígitos via WhatsApp para o seu número cadastrado." : currentLang === 'en' ? "We sent a 6-digit security code via WhatsApp to your registered number." : "Enviamos un código de seguridad de 6 dígitos vía WhatsApp a su número registrado.";
             } else if (role === 'nutricionista') {
                 if (btnPaciente) btnPaciente.classList.remove('active');
@@ -5866,7 +5514,6 @@
                 if (btnSupplier) btnSupplier.classList.remove('active');
                 if (btnAdmin) btnAdmin.classList.remove('active');
                 if (lblUser) lblUser.innerText = currentLang === 'pt' ? "E-mail de Acesso Clínico" : currentLang === 'en' ? "Clinical Access Email" : "Correo de Acceso Clínico";
-                if (loginEmail) loginEmail.value = "tati@cardoso.com"; // Default clinical login
                 if (desc2FA) desc2FA.innerText = currentLang === 'pt' ? "Insira o código de segurança do Token de Segurança de 2 Fatores." : currentLang === 'en' ? "Enter the security code from your 2-Factor Security Token." : "Ingrese el código de seguridad de su Token de Segurança de 2 Factores.";
             } else if (role === 'fornecedor') {
                 if (btnPaciente) btnPaciente.classList.remove('active');
@@ -5874,7 +5521,6 @@
                 if (btnSupplier) btnSupplier.classList.add('active');
                 if (btnAdmin) btnAdmin.classList.remove('active');
                 if (lblUser) lblUser.innerText = currentLang === 'pt' ? "E-mail do Fornecedor / Farmácia" : currentLang === 'en' ? "Supplier / Pharmacy Email" : "Correo del Proveedor / Farmacia";
-                if (loginEmail) loginEmail.value = "farmacia@parceira.com";
                 if (desc2FA) desc2FA.innerText = currentLang === 'pt' ? "Insira o código de segurança enviado para a sua farmácia credenciada." : currentLang === 'en' ? "Enter the security code sent to your accredited pharmacy." : "Ingrese el código de segurança enviado a su farmacia acreditada.";
             } else {
                 // Administrador / Master
@@ -6251,12 +5897,170 @@
             }
         }
 
-        function restoreDemoSeedData() {
-            if (confirm("Deseja restaurar os dados de demonstração (Dra. Tati, pacientes modelo e farmácias credenciadas)?")) {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.reload();
+        function registerNewNutri(event) {
+            event.preventDefault();
+            const name = document.getElementById('nutri-reg-name').value.trim();
+            const crn = document.getElementById('nutri-reg-crn').value.trim();
+            const phone = document.getElementById('nutri-reg-phone').value.trim();
+            const email = document.getElementById('nutri-reg-email').value.trim().toLowerCase();
+            const password = document.getElementById('nutri-reg-password').value;
+            const passwordConfirm = document.getElementById('nutri-reg-password-confirm').value;
+            const cep = document.getElementById('nutri-reg-cep').value.trim();
+            const city = document.getElementById('nutri-reg-city').value.trim();
+            const state = document.getElementById('nutri-reg-state').value;
+
+            if (!validatePasswordSecurityAndMatch(password, passwordConfirm)) {
+                return;
             }
+
+            const formattedName = name.startsWith('Dr.') || name.startsWith('Dra.') ? name : `Dra. ${name}`;
+
+            const newNutri = {
+                id: `nutri-${Date.now()}`,
+                name: formattedName,
+                crn: crn,
+                phone: phone,
+                email: email,
+                password: password,
+                specialty: "Nutrição Clínica",
+                address: { cep, city, state },
+                status: 'active',
+                rating: 5.0,
+                reviewsCount: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            const existingIdx = nutriAccounts.findIndex(n => n.email && n.email.toLowerCase() === email);
+            if (existingIdx >= 0) {
+                nutriAccounts[existingIdx] = newNutri;
+            } else {
+                nutriAccounts.push(newNutri);
+            }
+            localStorage.setItem('amazing_franklin_all_nutris', JSON.stringify(nutriAccounts));
+
+            nutriProfile = {
+                name: newNutri.name,
+                crn: newNutri.crn,
+                phone: newNutri.phone,
+                email: newNutri.email,
+                specialty: newNutri.specialty,
+                signature: newNutri.name.replace(/^Dr[a]?\.\s*/i, ''),
+                stampName: newNutri.name,
+                stampTitle: "Nutricionista Responsável",
+                photoUrl: "logo_clean.png",
+                logoUrl: "logo_clean.png",
+                address: newNutri.address
+            };
+            localStorage.setItem('amazing_franklin_nutri_profile', JSON.stringify(nutriProfile));
+
+            localStorage.setItem('amazing_franklin_logged_in_role', 'nutricionista');
+            localStorage.setItem('amazing_franklin_logged_in_email', newNutri.email);
+            activeRole = 'nutricionista';
+
+            document.getElementById('auth-wrapper').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+
+            setupRolePortal();
+
+            showToast(`✨ Consultório credenciado com sucesso!\n\nBem-vinda(o), ${newNutri.name}!`, "success", 6000);
+        }
+
+        function signupNewPatient(event) {
+            event.preventDefault();
+            const name = document.getElementById('pat-signup-name').value.trim();
+            const phone = document.getElementById('pat-signup-phone').value.trim();
+            const email = document.getElementById('pat-signup-email').value.trim().toLowerCase();
+            const password = document.getElementById('pat-signup-password').value;
+            const passwordConfirm = document.getElementById('pat-signup-password-confirm').value;
+            const cep = document.getElementById('pat-signup-cep').value.trim();
+            const city = document.getElementById('pat-signup-city').value.trim();
+            const state = document.getElementById('pat-signup-state').value;
+
+            if (!validatePasswordSecurityAndMatch(password, passwordConfirm)) {
+                return;
+            }
+
+            const newPatient = {
+                name: name,
+                email: email,
+                phone: phone,
+                password: password,
+                status: "Novo Paciente",
+                objective: "Avaliação Inicial",
+                createdAt: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
+                lastConsult: "--",
+                address: { cep, city, state, street: "", number: "" },
+                history: []
+            };
+
+            const existingIdx = patientsList.findIndex(p => p.email && p.email.toLowerCase() === email);
+            if (existingIdx >= 0) {
+                patientsList[existingIdx] = newPatient;
+            } else {
+                patientsList.push(newPatient);
+            }
+            localStorage.setItem('amazing_franklin_patients_list', JSON.stringify(patientsList));
+
+            patientData = {
+                name: newPatient.name,
+                email: newPatient.email,
+                phone: newPatient.phone,
+                activeNutri: null,
+                address: newPatient.address,
+                history: []
+            };
+            currentPatientName = newPatient.name;
+
+            localStorage.setItem('amazing_franklin_logged_in_role', 'paciente');
+            localStorage.setItem('amazing_franklin_logged_in_email', newPatient.email);
+            activeRole = 'paciente';
+
+            document.getElementById('auth-wrapper').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+
+            setupRolePortal();
+
+            showToast(`✨ Cadastro realizado com sucesso!\n\nBem-vindo(a), ${newPatient.name}!`, "success", 6000);
+        }
+
+        function accreditSupplier(event) {
+            event.preventDefault();
+            const name = document.getElementById('sup-reg-name').value.trim();
+            const cnpj = document.getElementById('sup-reg-cnpj').value.trim();
+            const email = document.getElementById('sup-reg-email').value.trim().toLowerCase();
+            const password = document.getElementById('sup-reg-password').value;
+            const passwordConfirm = document.getElementById('sup-reg-password-confirm').value;
+            const phone = document.getElementById('sup-reg-phone').value.trim();
+            const crf = document.getElementById('sup-reg-crf').value.trim();
+            const cep = document.getElementById('sup-reg-cep').value.trim();
+            const street = document.getElementById('sup-reg-street').value.trim();
+            const city = document.getElementById('sup-reg-city').value.trim();
+            const state = document.getElementById('sup-reg-state').value;
+            const number = document.getElementById('sup-reg-number').value.trim();
+
+            if (!validatePasswordSecurityAndMatch(password, passwordConfirm)) {
+                return;
+            }
+
+            const newSupplier = {
+                name: name,
+                email: email,
+                password: password,
+                cnpj: cnpj,
+                crf: crf,
+                phone: phone,
+                address: { cep, street, number, city: `${city} - ${state}` },
+                status: "pending",
+                rating: 5.0,
+                reviewsCount: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            supplierAccounts.push(newSupplier);
+            localStorage.setItem('amazing_franklin_supplier_accounts', JSON.stringify(supplierAccounts));
+
+            showAuthView('view-login');
+            showToast(`Solicitação de credenciamento enviada com sucesso!\n\nA farmácia ${name} passará por análise documental da diretoria.`, "success", 8000);
         }
 
         // Setup the interface based on role
@@ -18160,195 +17964,29 @@
 
         window.addEventListener('resize', drawHoloLines);
         window.addEventListener('load', () => {
-            // Sync lists from localStorage
-            const storedPatientsList = localStorage.getItem('amazing_franklin_patients_list');
-            if (storedPatientsList) {
-                patientsList = JSON.parse(storedPatientsList);
-                // Backfill/merge formula and dietDetails for existing history items if missing
-                patientsList.forEach(p => {
-                    if (p.consultFee === undefined || p.consultFee === null) {
-                        p.consultFee = 350.00;
-                    }
-                    if (!p.contractStartDate) {
-                        const parsedDate = p.createdAt ? parsePtDate(p.createdAt) : null;
-                        p.contractStartDate = parsedDate ? parsedDate.toISOString() : new Date().toISOString();
-                    }
-                    if (!p.lastFeeReviewDate) {
-                        p.lastFeeReviewDate = p.contractStartDate;
-                    }
-                    if (p.annualFeeAlertDismissed === undefined) {
-                        p.annualFeeAlertDismissed = false;
-                    }
+            // Sync lists cleanly from localStorage
+            patientsList = safeParseJSON('amazing_franklin_patients_list', []);
+            productsList = safeParseJSON('amazing_franklin_products_list', []);
+            patientPrescriptions = safeParseJSON('amazing_franklin_patient_prescriptions', []);
+            supplierOrders = safeParseJSON('amazing_franklin_supplier_orders', []);
+            supplierAccounts = safeParseJSON('amazing_franklin_supplier_accounts', []);
+            supplierReviews = safeParseJSON('amazing_franklin_supplier_reviews', []);
+            nutriAccounts = safeParseJSON('amazing_franklin_all_nutris', []);
+            appointmentsList = safeParseJSON('amazing_franklin_appointments_list', []);
+            patientNotifications = safeParseJSON('amazing_franklin_patient_notifications', []);
 
-                    if (!p.createdAt) {
-                        if (p.name === 'Ana Paula Silva') p.createdAt = '10 de Janeiro de 2026';
-                        else if (p.name === 'Carlos Henrique Ramos') p.createdAt = '01 de Junho de 2026';
-                        else if (p.name === 'Beatriz Albuquerque') p.createdAt = '14 de Junho de 2026';
-                        else if (p.name && p.name.includes('Frederico')) p.createdAt = '15 de Maio de 2026';
-                        else if (p.history && p.history.length > 0) p.createdAt = p.history[0].date;
-                        else if (p.lastConsult && p.lastConsult !== '-') p.createdAt = p.lastConsult;
-                        else p.createdAt = '14 de Junho de 2026';
-                    }
-
-                    if (p.history) {
-                        p.history.forEach(c => {
-                            if (!c.formula) {
-                                if (c.date && c.date.includes('18 de Maio')) {
-                                    c.formula = "L-Carnitina 500mg, Cafeína Anidra 100mg, Beta-Alanina 1.5g - 60 cápsulas (Tomar 1 dose 30 min antes do treino de força)";
-                                    c.dietDetails = "Plano com 1.750 kcal/dia com aporte aumentado de proteínas (2.0g/kg) e carboidratos complexos no pré/pós treino para hipertrofia e definição.";
-                                    c.dietPdf = "Plano_Alimentar_Hipertrofia_V3.pdf";
-                                    c.formulaStatus = "Cotações Disponíveis";
-                                } else if (c.date && c.date.includes('10 de Março')) {
-                                    c.formula = "Picolinato de Cromo 200mcg, Berberina 300mg, Extrato de Chá Verde 250mg - 60 cápsulas (Tomar 1 dose 30 min antes do almoço e jantar)";
-                                    c.dietDetails = "Plano com 1.450 kcal/dia com ciclagem de carboidratos em dias de treino intenso. Café da manhã com ovos mexidos e chá verde antioxidante.";
-                                    c.dietPdf = "Plano_Alimentar_QueimaGordura_V2.pdf";
-                                    c.formulaStatus = "Cotado e Manipulado";
-                                } else if (c.date && c.date.includes('15 de Janeiro')) {
-                                    c.formula = "Coenzima Q10 100mg, Vitamina D3 2.000UI, Magnésio Dimalato 250mg - 60 cápsulas (Tomar 1 cápsula após o almoço)";
-                                    c.dietDetails = "Plano com 1.600 kcal/dia. Foco em equilíbrio hidroeletrolítico, ingestão de 3L de água diários, redução de sódio e aumento de fibras solúveis (aveia, psyllium).";
-                                    c.dietPdf = "Plano_Alimentar_Adaptacao_V1.pdf";
-                                    c.formulaStatus = "Cotado e Manipulado";
-                                } else {
-                                    c.formula = "Fórmula manipulada e suplementação personalizada prescrita pela nutricionista.";
-                                    c.dietDetails = "Diretrizes alimentares personalizadas da consulta.";
-                                    c.dietPdf = "Plano_Alimentar.pdf";
-                                    c.formulaStatus = "Prescrição Ativa";
-                                }
-                            }
-                        });
-                    }
-                });
-                localStorage.setItem('amazing_franklin_patients_list', JSON.stringify(patientsList));
-            } else {
-                localStorage.setItem('amazing_franklin_patients_list', JSON.stringify(patientsList));
-            }
-
-            const storedProductsList = localStorage.getItem('amazing_franklin_products_list');
-            if (storedProductsList) {
-                productsList = JSON.parse(storedProductsList);
-            } else {
-                localStorage.setItem('amazing_franklin_products_list', JSON.stringify(productsList));
-            }
-
-            const storedPurchasedProducts = localStorage.getItem('amazing_franklin_purchased_products');
-            if (storedPurchasedProducts) {
-                purchasedProducts = JSON.parse(storedPurchasedProducts);
-                purchasedProducts.forEach(prodId => {
-                    const p = productsList.find(prod => prod.id === prodId);
-                    if (p) purchasedProtocols.add(p.title);
-                });
-            }
-
-            // Load state from localStorage if exists
-            const storedName = localStorage.getItem('amazing_franklin_patient_name');
-            if (storedName) {
-                patientData.name = storedName;
-            }
-            const storedCpf = localStorage.getItem('amazing_franklin_patient_cpf');
-            if (storedCpf) {
-                patientData.cpf = storedCpf;
-            }
-            const storedPhone = localStorage.getItem('amazing_franklin_patient_phone');
-            if (storedPhone) {
-                patientData.phone = storedPhone;
-            }
-
-            const storedAddress = localStorage.getItem('amazing_franklin_patient_address');
-            if (storedAddress) {
-                patientData.address = JSON.parse(storedAddress);
-            }
-            const storedPrescriptions = localStorage.getItem('amazing_franklin_patient_prescriptions');
-            if (storedPrescriptions) {
-                patientPrescriptions = JSON.parse(storedPrescriptions);
-            }
-            const storedSupplierOrders = localStorage.getItem('amazing_franklin_supplier_orders');
-            if (storedSupplierOrders) {
-                supplierOrders = JSON.parse(storedSupplierOrders);
-            }
             const storedNutriProfile = localStorage.getItem('amazing_franklin_nutri_profile');
             if (storedNutriProfile) {
                 nutriProfile = JSON.parse(storedNutriProfile);
             }
 
-            const storedSupplierAccounts = localStorage.getItem('amazing_franklin_supplier_accounts');
-            if (storedSupplierAccounts) {
-                supplierAccounts = JSON.parse(storedSupplierAccounts);
-            } else {
-                localStorage.setItem('amazing_franklin_supplier_accounts', JSON.stringify(supplierAccounts));
+            const storedName = localStorage.getItem('amazing_franklin_patient_name');
+            if (storedName) {
+                patientData.name = storedName;
             }
-
-            const storedSupplierReviews = localStorage.getItem('amazing_franklin_supplier_reviews');
-            if (storedSupplierReviews) {
-                supplierReviews = JSON.parse(storedSupplierReviews);
-            } else {
-                localStorage.setItem('amazing_franklin_supplier_reviews', JSON.stringify(supplierReviews));
-            }
-
-            const storedNutriAccounts = localStorage.getItem('amazing_franklin_all_nutris');
-            if (storedNutriAccounts) {
-                nutriAccounts = JSON.parse(storedNutriAccounts);
-            } else {
-                nutriAccounts = [
-                    {
-                        name: "Dra. Tati Cardoso",
-                        email: "tati.cardoso@nutricionista.com.br",
-                        password: "senhaSegura123",
-                        crn: "CRN-3 12345",
-                        phone: "(11) 98888-8888",
-                        specialty: "Nutrição Clínica e Esportiva",
-                        address: { cep: "01311-200", street: "Av. Paulista", number: "1000", city: "São Paulo", state: "SP" },
-                        status: "Ativa",
-                        trialDays: 15
-                    },
-                    {
-                        name: "Dra. Tati Cardoso",
-                        email: "tati@cardoso.com",
-                        password: "senhaSegura123",
-                        crn: "CRN-3 12345",
-                        phone: "(11) 98888-8888",
-                        specialty: "Nutrição Clínica e Esportiva",
-                        address: { cep: "01311-200", street: "Av. Paulista", number: "1000", city: "São Paulo", state: "SP" },
-                        status: "Ativa",
-                        trialDays: 15
-                    },
-                    {
-                        name: "Dra. Marina Silva",
-                        email: "marina@nutri.com",
-                        password: "senhaSegura123",
-                        crn: "CRN-3 54321",
-                        phone: "(11) 97777-6666",
-                        specialty: "Nutrição Funcional",
-                        address: { cep: "01311-200", street: "Av. Paulista", number: "1000", city: "São Paulo", state: "SP" },
-                        status: "Ativa",
-                        trialDays: 15
-                    },
-                    {
-                        name: "Dra. Beatriz Souza",
-                        email: "beatriz@nutri.com",
-                        password: "senhaSegura123",
-                        crn: "CRN-3 33333",
-                        phone: "(11) 96666-3333",
-                        specialty: "Nutrição Oncológica",
-                        address: { cep: "01311-200", street: "Av. Paulista", number: "1000", city: "São Paulo", state: "SP" },
-                        status: "Teste",
-                        trialDays: 15
-                    },
-                    {
-                        name: "Dra. Helena Lima",
-                        email: "helena@nutri.com",
-                        password: "senhaSegura123",
-                        crn: "CRN-3 44444",
-                        phone: "(11) 95555-4444",
-                        specialty: "Nutrologia Integrativa",
-                        address: { cep: "01311-200", street: "Av. Paulista", number: "1000", city: "São Paulo", state: "SP" },
-                        status: "Suspensa",
-                        trialDays: 15
-                    }
-                ];
-                localStorage.setItem('amazing_franklin_all_nutris', JSON.stringify(nutriAccounts));
-                if (!localStorage.getItem('amazing_franklin_suspended_nutris')) {
-                    localStorage.setItem('amazing_franklin_suspended_nutris', JSON.stringify(["helena@nutri.com"]));
-                }
+            const storedAddress = localStorage.getItem('amazing_franklin_patient_address');
+            if (storedAddress) {
+                patientData.address = JSON.parse(storedAddress);
             }
 
             initNutriProfileListeners();
