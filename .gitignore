@@ -1,0 +1,5 @@
+node_modules/
+test-results/
+.system_generated/
+scratch/
+.env*

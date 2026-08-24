@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "name": "amazing-franklin-saas",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

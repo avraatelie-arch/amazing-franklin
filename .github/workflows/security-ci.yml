@@ -1,0 +1,102 @@
+# ============================================================================
+# ESTEIRA DE INTEGRAÇÃO CONTÍNUA (CI) - SEGURANÇA E ISOLAMENTO MULTI-TENANT
+# Caminho: .github/workflows/security-ci.yml
+# ============================================================================
+# Objetivo: Rodar automaticamente todos os testes de RLS, API e E2E a cada commit,
+# impedindo que qualquer brecha de segurança ou vazamento seja deployado em produção.
+# ============================================================================
+
+name: Multi-Tenant Security & Regression Suite
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  security-validation:
+    name: Validação de Isolamento de Dados (RLS, API & E2E)
+    runs-on: ubuntu-latest
+
+    services:
+      # Inicializa o banco de dados PostgreSQL com pgTAP
+      postgres:
+        image: pgcentralbook/postgres-pgtap:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: superSecretPassword123
+          POSTGRES_DB: portal_nutri_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    # 1. Checkout do Repositório
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # 2. Configuração do ambiente PostgreSQL
+    - name: Provisionar Schema e RLS no PostgreSQL
+      run: |
+        # Instalar cliente postgresql local para executar scripts
+        sudo apt-get update && sudo apt-get install -y postgresql-client
+        
+        # Executa a criação do schema de banco de dados
+        # (Isso simula a criação das tabelas 'tenants', 'users', 'body_scans' etc.)
+        # AQUI COMPILAMOS O ARQUIVO DDL COM RLS HABILITADO
+        PGPASSWORD=superSecretPassword123 psql -h localhost -p 5432 -U postgres -d portal_nutri_db -f docs/schema.sql
+        
+        # Cria a extensão pgtap necessária para rodar a suíte de testes de banco
+        PGPASSWORD=superSecretPassword123 psql -h localhost -p 5432 -U postgres -d portal_nutri_db -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
+
+    # 3. Execução dos testes de banco de dados (pgTAP RLS isolation)
+    - name: Executar Testes de Banco de Dados pgTAP (RLS)
+      run: |
+        PGPASSWORD=superSecretPassword123 pg_prove -h localhost -p 5432 -U postgres -d portal_nutri_db tests/database/supabase_rls.test.sql
+
+    # 4. Instalar Node.js para rodar testes de API e E2E
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    # 5. Instalar dependências de testes
+    - name: Install dependencies
+      run: |
+        npm ci || npm install jest supertest express @playwright/test
+
+    # 6. Executar Testes de Unidade e API (Isolamento de Rotas)
+    - name: Executar Testes Unitários de API (Jest/Supertest)
+      run: |
+        npx jest tests/api/tenant-isolation.test.js --coverage
+
+    # 7. Instalar navegadores do Playwright
+    - name: Install Playwright Browsers
+      run: |
+        npx playwright install --with-deps
+
+    # 8. Rodar Testes End-to-End de Penetração
+    - name: Executar Testes de Interface E2E (Playwright)
+      env:
+        CI: true
+      run: |
+        # Inicia a aplicação mock em segundo plano para o Playwright rodar
+        npm run dev &
+        
+        # Roda a suíte de testes
+        npx playwright test tests/e2e/tenant-security.spec.js
+
+    # 9. Upload de relatórios em caso de falha (ajuda a auditar brechas de segurança)
+    - name: Upload Playwright Report on Failure
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: security-violation-report
+        path: playwright-report/
+        retention-days: 30

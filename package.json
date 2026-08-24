@@ -1,0 +1,29 @@
+{
+  "name": "amazing-franklin-saas",
+  "version": "1.0.0",
+  "description": "Multi-Tenant SaaS Portal for Nutritionists - Security & Regression Testing Harness",
+  "main": "index.html",
+  "scripts": {
+    "dev": "echo 'Iniciando servidor de desenvolvimento local...' && npx http-server -p 3000",
+    "test": "jest tests/api",
+    "test:e2e": "playwright test tests/e2e",
+    "test:db": "pg_prove -U postgres -d portal_nutri_db tests/database/supabase_rls.test.sql"
+  },
+  "keywords": [
+    "saas",
+    "multi-tenant",
+    "security",
+    "rls",
+    "playwright",
+    "jest",
+    "pgtap"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.39.0",
+    "express": "^4.18.2",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  }
+}
