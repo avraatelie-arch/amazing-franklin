@@ -8705,9 +8705,21 @@
             const notifyChecked = document.getElementById('chk-notify') ? document.getElementById('chk-notify').checked : false;
 
             const selectPatientEl = document.getElementById('consult-patient-select');
-            const targetPatientName = (currentPatientName && currentPatientName.trim()) 
-                ? currentPatientName.trim() 
-                : (selectPatientEl && selectPatientEl.value ? selectPatientEl.value.trim() : "Ana Paula Silva");
+            let targetPatientName = "";
+            if (selectPatientEl && selectPatientEl.value && selectPatientEl.value.trim()) {
+                targetPatientName = selectPatientEl.value.trim();
+            } else if (currentPatientName && currentPatientName.trim()) {
+                targetPatientName = currentPatientName.trim();
+            } else {
+                const activePatients = typeof getActiveNutriPatientsList === 'function' ? getActiveNutriPatientsList() : patientsList;
+                if (activePatients.length > 0) {
+                    targetPatientName = activePatients[0].name;
+                } else if (patientsList.length > 0) {
+                    targetPatientName = patientsList[0].name;
+                } else {
+                    targetPatientName = "Novo Paciente";
+                }
+            }
             currentPatientName = targetPatientName;
 
             // Save in temp variable
@@ -8721,46 +8733,58 @@
             };
 
             // Populate Review modal fields
-            document.getElementById('review-patient-name').innerText = targetPatientName;
-            document.getElementById('review-patient-objective').innerText = objective || "-";
-            document.getElementById('review-patient-status').innerText = status || "-";
-            document.getElementById('review-peso').innerText = w;
-            document.getElementById('review-gordura').innerText = f;
-            document.getElementById('review-massa').innerText = m;
-            document.getElementById('review-agua').innerText = a;
-            document.getElementById('review-gv').innerText = gv;
-            document.getElementById('review-tmb').innerText = tmb;
+            const revName = document.getElementById('review-patient-name');
+            if (revName) revName.innerText = targetPatientName;
+            const revObj = document.getElementById('review-patient-objective');
+            if (revObj) revObj.innerText = objective || "-";
+            const revStat = document.getElementById('review-patient-status');
+            if (revStat) revStat.innerText = status || "-";
+            
+            if (document.getElementById('review-peso')) document.getElementById('review-peso').innerText = w;
+            if (document.getElementById('review-gordura')) document.getElementById('review-gordura').innerText = f;
+            if (document.getElementById('review-massa')) document.getElementById('review-massa').innerText = m;
+            if (document.getElementById('review-agua')) document.getElementById('review-agua').innerText = a;
+            if (document.getElementById('review-gv')) document.getElementById('review-gv').innerText = gv;
+            if (document.getElementById('review-tmb')) document.getElementById('review-tmb').innerText = tmb;
 
-            document.getElementById('review-c-neck').innerText = c_neck;
-            document.getElementById('review-c-chest').innerText = c_chest;
-            document.getElementById('review-c-arm-r').innerText = c_arm_r;
-            document.getElementById('review-c-arm-l').innerText = c_arm_l;
-            document.getElementById('review-c-waist').innerText = c_waist;
-            document.getElementById('review-c-hip').innerText = c_hip;
-            document.getElementById('review-c-thigh-r').innerText = c_thigh_r;
-            document.getElementById('review-c-thigh-l').innerText = c_thigh_l;
-            document.getElementById('review-c-calf-r').innerText = c_calf_r;
-            document.getElementById('review-c-calf-l').innerText = c_calf_l;
+            if (document.getElementById('review-c-neck')) document.getElementById('review-c-neck').innerText = c_neck;
+            if (document.getElementById('review-c-chest')) document.getElementById('review-c-chest').innerText = c_chest;
+            if (document.getElementById('review-c-arm-r')) document.getElementById('review-c-arm-r').innerText = c_arm_r;
+            if (document.getElementById('review-c-arm-l')) document.getElementById('review-c-arm-l').innerText = c_arm_l;
+            if (document.getElementById('review-c-waist')) document.getElementById('review-c-waist').innerText = c_waist;
+            if (document.getElementById('review-c-hip')) document.getElementById('review-c-hip').innerText = c_hip;
+            if (document.getElementById('review-c-thigh-r')) document.getElementById('review-c-thigh-r').innerText = c_thigh_r;
+            if (document.getElementById('review-c-thigh-l')) document.getElementById('review-c-thigh-l').innerText = c_thigh_l;
+            if (document.getElementById('review-c-calf-r')) document.getElementById('review-c-calf-r').innerText = c_calf_r;
+            if (document.getElementById('review-c-calf-l')) document.getElementById('review-c-calf-l').innerText = c_calf_l;
 
-            document.getElementById('review-dieta').innerText = d || "Nenhum plano alimentar prescrito nesta consulta.";
+            if (document.getElementById('review-dieta')) {
+                document.getElementById('review-dieta').innerText = d || "Nenhum plano alimentar prescrito nesta consulta.";
+            }
 
             const formulaContainer = document.getElementById('review-formula-container');
-            if (formulaText) {
-                formulaContainer.style.display = 'block';
-                document.getElementById('review-formula').innerText = formulaText;
-                document.getElementById('review-formula-status').innerText = sendToPharmacies 
-                    ? "✓ Enviado para cotação em farmácias parceiras" 
-                    : "✓ Salvo apenas no prontuário do paciente";
-            } else {
-                formulaContainer.style.display = 'none';
+            if (formulaContainer) {
+                if (formulaText) {
+                    formulaContainer.style.display = 'block';
+                    if (document.getElementById('review-formula')) document.getElementById('review-formula').innerText = formulaText;
+                    if (document.getElementById('review-formula-status')) {
+                        document.getElementById('review-formula-status').innerText = sendToPharmacies 
+                            ? "✓ Enviado para cotação em farmácias parceiras" 
+                            : "✓ Salvo apenas no prontuário do paciente";
+                    }
+                } else {
+                    formulaContainer.style.display = 'none';
+                }
             }
 
             // Show review modal
-            document.getElementById('consult-review-modal').classList.add('active');
+            const reviewModal = document.getElementById('consult-review-modal');
+            if (reviewModal) reviewModal.classList.add('active');
         }
 
         function closeConsultReviewModal() {
-            document.getElementById('consult-review-modal').classList.remove('active');
+            const reviewModal = document.getElementById('consult-review-modal');
+            if (reviewModal) reviewModal.classList.remove('active');
         }
 
         function confirmAndSavePatientConsult() {
@@ -8779,138 +8803,164 @@
             const year = today.getFullYear();
             const formattedDate = `${day} de ${month} de ${year}`;
 
-            const patient = patientsList.find(p => (p.name || "").trim().toLowerCase() === (data.patientName || "").trim().toLowerCase());
-            if (patient) {
-                patient.lastConsult = formattedDate;
+            const loggedEmail = localStorage.getItem('amazing_franklin_logged_in_email') || sessionStorage.getItem('amazing_franklin_logged_in_email');
 
-                if (data.objective) {
-                    patient.objective = data.objective;
-                    if (!objectiveOptions.includes(data.objective)) {
-                        objectiveOptions.push(data.objective);
-                    }
-                }
-                if (data.status) {
-                    patient.status = data.status;
-                    if (!statusOptions.includes(data.status)) {
-                        statusOptions.push(data.status);
-                    }
-                }
-
-                data.evolutionObj.date = formattedDate;
-                patient.activeEvolutionProgram = data.evolutionObj;
-
-                if (!patient.history) {
-                    patient.history = [];
-                }
-
-                patient.history.push({
-                    date: formattedDate,
-                    consultFee: data.consultFee || patient.consultFee || 350.00,
-                    nfseNumber: (3000 + patient.history.length + 1).toString(),
-                    nfseIssuedAt: formattedDate,
-                    weight: data.w,
-                    bodyFat: data.f,
-                    muscleMass: data.m,
-                    waterPct: data.a,
-                    visceralFat: data.gv,
-                    tmb: data.tmb,
-                    diet: data.d,
-                    dietDetails: (data.evolutionObj && (data.evolutionObj.focoFase || data.evolutionObj.metasAlimentares)) 
-                        ? `${data.evolutionObj.focoFase || ''} ${data.evolutionObj.metasAlimentares || ''}`.trim() 
-                        : "Plano alimentar e orientações nutricionais personalizadas prescritas pela nutricionista.",
-                    dietPdf: "Plano_Alimentar_Atualizado.pdf",
-                    formula: data.formulaText || "Nenhuma fórmula manipulada prescrita nesta consulta.",
-                    formulaStatus: data.sendToPharmacies ? "Enviado para Cotações" : (data.formulaText ? "Salvo no Prontuário" : "Sem manipulação"),
-                    notes: data.n,
-                    evolutionProgram: data.evolutionObj,
-                    photoBefore: tempPhotoBefore || (patient.history.length > 0 ? patient.history[patient.history.length - 1].photoBefore : "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80"),
-                    photoAfter: tempPhotoAfter || (patient.history.length > 0 ? patient.history[patient.history.length - 1].photoAfter : "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80"),
-                    circunferencias: {
-                        neck: data.c_neck,
-                        chest: data.c_chest,
-                        'arm-r': data.c_arm_r,
-                        'arm-l': data.c_arm_l,
-                        waist: data.c_waist,
-                        hip: data.c_hip,
-                        'thigh-r': data.c_thigh_r,
-                        'thigh-l': data.c_thigh_l,
-                        'calf-r': data.c_calf_r,
-                        'calf-l': data.c_calf_l
-                    }
-                });
-
-                if (patient.name === patientData.name) {
-                    patientData.activeEvolutionProgram = data.evolutionObj;
-                    localStorage.setItem('amazing_franklin_active_evolution', JSON.stringify(data.evolutionObj));
-                    localStorage.setItem('amazing_franklin_patient_address', JSON.stringify(patientData.address || {}));
-                    
-                    patientData.peso.push(data.w);
-                    patientData.gordura.push(data.f);
-                    patientData.massa.push(data.m);
-                    patientData.agua = data.a;
-                    patientData.gorduraVisceral = data.gv;
-                    patientData.tmb = data.tmb;
-                    patientData.circunferencias = {
-                        neck: data.c_neck,
-                        chest: data.c_chest,
-                        'arm-r': data.c_arm_r,
-                        'arm-l': data.c_arm_l,
-                        waist: data.c_waist,
-                        hip: data.c_hip,
-                        'thigh-r': data.c_thigh_r,
-                        'thigh-l': data.c_thigh_l,
-                        'calf-r': data.c_calf_r,
-                        'calf-l': data.c_calf_l
-                    };
-                    patientData.notes = data.n;
-                    patientData.dietaAtiva = data.d;
-                    if (patientData.months.length < patientData.peso.length) {
-                        patientData.months.push(month);
-                    }
-                    if (tempPhotoBefore) patientData.fotoAntes = tempPhotoBefore;
-                    if (tempPhotoAfter) patientData.fotoDepois = tempPhotoAfter;
-
-                    // Generate prescription quote request
-                    if (data.formulaText) {
-                        const newPresc = {
-                            id: `presc-${Date.now()}`,
-                            patientName: patient.name,
-                            formula: data.formulaText,
-                            status: data.sendToPharmacies ? "pending_quotes" : "draft",
-                            date: formattedDate,
-                            quotes: [],
-                            nutriName: nutriProfile.name,
-                            nutriCrn: nutriProfile.crn,
-                            nutriSpecialty: nutriProfile.specialty,
-                            nutriSignature: nutriProfile.signature,
-                            nutriStampName: nutriProfile.stampName,
-                            nutriStampTitle: nutriProfile.stampTitle
-                        };
-                        patientPrescriptions.unshift(newPresc);
-                        localStorage.setItem('amazing_franklin_patient_prescriptions', JSON.stringify(patientPrescriptions));
-                        document.getElementById('input-prescription-formula').value = '';
-                    }
-                }
-                
-                localStorage.setItem('amazing_franklin_patients_list', JSON.stringify(patientsList));
-                logAdminActivity(`Dra. Tati Cardoso registrou consulta e evolução para ${patient.name}`, "Nutricionista");
-                renderPatientsTable();
-                renderNutriDashboard();
+            let patient = patientsList.find(p => (p.name || "").trim().toLowerCase() === (data.patientName || "").trim().toLowerCase());
+            if (!patient) {
+                patient = {
+                    name: data.patientName,
+                    email: `${data.patientName.toLowerCase().replace(/\s+/g, '.')}@email.com`,
+                    phone: "(11) 99999-9999",
+                    status: data.status || "Novo Paciente",
+                    objective: data.objective || "Prevenção & Bem-estar",
+                    createdAt: formattedDate,
+                    lastConsult: formattedDate,
+                    nutriEmail: loggedEmail,
+                    consultFee: data.consultFee || 350.00,
+                    history: []
+                };
+                patientsList.unshift(patient);
             }
 
+            patient.lastConsult = formattedDate;
+
+            if (data.objective) {
+                patient.objective = data.objective;
+                if (!objectiveOptions.includes(data.objective)) {
+                    objectiveOptions.push(data.objective);
+                }
+            }
+            if (data.status) {
+                patient.status = data.status;
+                if (!statusOptions.includes(data.status)) {
+                    statusOptions.push(data.status);
+                }
+            }
+
+            data.evolutionObj.date = formattedDate;
+            patient.activeEvolutionProgram = data.evolutionObj;
+
+            if (!patient.history) {
+                patient.history = [];
+            }
+
+            patient.history.push({
+                date: formattedDate,
+                consultFee: data.consultFee || patient.consultFee || 350.00,
+                nfseNumber: (3000 + patient.history.length + 1).toString(),
+                nfseIssuedAt: formattedDate,
+                weight: data.w,
+                bodyFat: data.f,
+                muscleMass: data.m,
+                waterPct: data.a,
+                visceralFat: data.gv,
+                tmb: data.tmb,
+                diet: data.d,
+                dietDetails: (data.evolutionObj && (data.evolutionObj.focoFase || data.evolutionObj.metasAlimentares)) 
+                    ? `${data.evolutionObj.focoFase || ''} ${data.evolutionObj.metasAlimentares || ''}`.trim() 
+                    : "Plano alimentar e orientações nutricionais personalizadas prescritas pela nutricionista.",
+                dietPdf: "Plano_Alimentar_Atualizado.pdf",
+                formula: data.formulaText || "Nenhuma fórmula manipulada prescrita nesta consulta.",
+                formulaStatus: data.sendToPharmacies ? "Enviado para Cotações" : (data.formulaText ? "Salvo no Prontuário" : "Sem manipulação"),
+                notes: data.n,
+                evolutionProgram: data.evolutionObj,
+                photoBefore: tempPhotoBefore || (patient.history.length > 0 ? patient.history[patient.history.length - 1].photoBefore : "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80"),
+                photoAfter: tempPhotoAfter || (patient.history.length > 0 ? patient.history[patient.history.length - 1].photoAfter : "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80"),
+                circunferencias: {
+                    neck: data.c_neck,
+                    chest: data.c_chest,
+                    'arm-r': data.c_arm_r,
+                    'arm-l': data.c_arm_l,
+                    waist: data.c_waist,
+                    hip: data.c_hip,
+                    'thigh-r': data.c_thigh_r,
+                    'thigh-l': data.c_thigh_l,
+                    'calf-r': data.c_calf_r,
+                    'calf-l': data.c_calf_l
+                }
+            });
+
+            // Generate prescription quote request if formula entered
+            if (data.formulaText) {
+                const newPresc = {
+                    id: `presc-${Date.now()}`,
+                    patientName: patient.name,
+                    formula: data.formulaText,
+                    status: data.sendToPharmacies ? "pending_quotes" : "draft",
+                    date: formattedDate,
+                    quotes: [],
+                    nutriName: nutriProfile.name,
+                    nutriCrn: nutriProfile.crn,
+                    nutriSpecialty: nutriProfile.specialty,
+                    nutriSignature: nutriProfile.signature,
+                    nutriStampName: nutriProfile.stampName,
+                    nutriStampTitle: nutriProfile.stampTitle
+                };
+                patientPrescriptions.unshift(newPresc);
+                localStorage.setItem('amazing_franklin_patient_prescriptions', JSON.stringify(patientPrescriptions));
+                const formulaInput = document.getElementById('input-prescription-formula');
+                if (formulaInput) formulaInput.value = '';
+            }
+
+            // Sync with patientData if it's the active patient
+            if (patientData && (!patientData.name || patient.name.toLowerCase() === (patientData.name || '').toLowerCase())) {
+                patientData.name = patient.name;
+                patientData.activeEvolutionProgram = data.evolutionObj;
+                localStorage.setItem('amazing_franklin_active_evolution', JSON.stringify(data.evolutionObj));
+                localStorage.setItem('amazing_franklin_patient_address', JSON.stringify(patientData.address || {}));
+                
+                if (!patientData.peso) patientData.peso = [];
+                if (!patientData.gordura) patientData.gordura = [];
+                if (!patientData.massa) patientData.massa = [];
+                if (!patientData.months) patientData.months = [];
+
+                patientData.peso.push(data.w);
+                patientData.gordura.push(data.f);
+                patientData.massa.push(data.m);
+                patientData.agua = data.a;
+                patientData.gorduraVisceral = data.gv;
+                patientData.tmb = data.tmb;
+                patientData.circunferencias = {
+                    neck: data.c_neck,
+                    chest: data.c_chest,
+                    'arm-r': data.c_arm_r,
+                    'arm-l': data.c_arm_l,
+                    waist: data.c_waist,
+                    hip: data.c_hip,
+                    'thigh-r': data.c_thigh_r,
+                    'thigh-l': data.c_thigh_l,
+                    'calf-r': data.c_calf_r,
+                    'calf-l': data.c_calf_l
+                };
+                patientData.notes = data.n;
+                patientData.dietaAtiva = data.d;
+                if (patientData.months.length < patientData.peso.length) {
+                    patientData.months.push(month);
+                }
+                if (tempPhotoBefore) patientData.fotoAntes = tempPhotoBefore;
+                if (tempPhotoAfter) patientData.fotoDepois = tempPhotoAfter;
+            }
+
+            localStorage.setItem('amazing_franklin_patients_list', JSON.stringify(patientsList));
+            logAdminActivity(`${nutriProfile.name || 'Nutricionista'} registrou consulta e evolução para ${patient.name}`, "Nutricionista");
+            
+            renderPatientsTable();
+            renderNutriDashboard();
             loadPatientDashboard();
 
             if (data.notifyChecked) {
                 const toast = document.getElementById('email-notification-toast');
-                document.getElementById('email-toast-desc').innerText = `Enviado relatório clínico para ${patient ? patient.email : 'paciente'}.`;
-                toast.classList.add('active');
-                
-                setTimeout(() => {
-                    toast.classList.remove('active');
-                }, 4500);
+                const toastDesc = document.getElementById('email-toast-desc');
+                if (toastDesc) toastDesc.innerText = `Enviado relatório clínico para ${patient ? patient.email : 'paciente'}.`;
+                if (toast) {
+                    toast.classList.add('active');
+                    setTimeout(() => {
+                        toast.classList.remove('active');
+                    }, 4500);
+                }
             }
 
-            showToast(`Ficha de consulta salva com sucesso! Os dados foram atualizados no histórico.`, "success");
+            showToast(`✨ Ficha de atendimento e plano de evolução enviados com sucesso para ${patient.name}!`, "success", 6000);
             
             tempPhotoBefore = null;
             tempPhotoAfter = null;
@@ -8930,10 +8980,10 @@
             closeConsultReviewModal();
 
             // Navigate to patient dashboard tab in nutritionist view
-            goToTab('tab-nutri-patients');
+            switchTab('tab-nutri-patients');
             
             // Immediately open patient details modal (history timeline view)
-            openPatientProfileModal(data.patientName);
+            openPatientProfileModal(patient.name);
 
             tempPendingConsultData = null;
         }
