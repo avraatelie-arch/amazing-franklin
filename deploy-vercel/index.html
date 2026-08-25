@@ -8278,12 +8278,12 @@
         function getBroadcastFilteredPatients(target) {
             const base = getActiveNutriPatientsList();
             if (!target || target === 'all') return base;
-            if (target === 'active') return base.filter(p => p.status.toLowerCase().includes('ativo') || p.status.toLowerCase().includes('mentoria'));
-            if (target === 'vip') return base.filter(p => p.status.toLowerCase().includes('vip') || p.status.toLowerCase().includes('mentoria'));
-            if (target === 'inactive') return base.filter(p => p.status.toLowerCase().includes('inativo') || p.lastConsult === '-' || p.lastConsult.includes('Maio') || p.lastConsult.includes('Janeiro') || p.lastConsult.includes('Março'));
-            if (target === 'new') return base.filter(p => p.status.toLowerCase().includes('novo') || p.lastConsult === '-');
-            if (target === 'obj-weight') return base.filter(p => p.objective.toLowerCase().includes('perda') || p.objective.toLowerCase().includes('emagrecimento') || p.objective.toLowerCase().includes('peso'));
-            if (target === 'obj-hypertrophy') return base.filter(p => p.objective.toLowerCase().includes('hipertrofia') || p.objective.toLowerCase().includes('massa'));
+            if (target === 'active') return base.filter(p => p.status && (p.status.toLowerCase().includes('ativo') || p.status.toLowerCase().includes('mentoria')));
+            if (target === 'vip') return base.filter(p => p.status && (p.status.toLowerCase().includes('vip') || p.status.toLowerCase().includes('mentoria')));
+            if (target === 'inactive') return base.filter(p => (p.status && p.status.toLowerCase().includes('inativo')) || !p.lastConsult || p.lastConsult === '-' || p.lastConsult.includes('Maio') || p.lastConsult.includes('Janeiro') || p.lastConsult.includes('Março'));
+            if (target === 'new') return base.filter(p => (p.status && p.status.toLowerCase().includes('novo')) || !p.lastConsult || p.lastConsult === '-');
+            if (target === 'obj-weight') return base.filter(p => p.objective && (p.objective.toLowerCase().includes('perda') || p.objective.toLowerCase().includes('emagrecimento') || p.objective.toLowerCase().includes('peso')));
+            if (target === 'obj-hypertrophy') return base.filter(p => p.objective && (p.objective.toLowerCase().includes('hipertrofia') || p.objective.toLowerCase().includes('massa')));
             return base;
         }
 
@@ -9340,28 +9340,9 @@
             });
         }
 
-        // Booking Selection
+        // Booking Selection State
         let selectedDay = 22;
         let selectedTimeText = "14:00";
-
-        function selectDay(el, day) {
-            const days = document.querySelectorAll('.calendar-day');
-            days.forEach(d => d.classList.remove('active'));
-            el.classList.add('active');
-            selectedDay = day;
-            document.getElementById('selected-day-label').innerText = `Para Segunda-feira, ${day} de Junho`;
-        }
-
-        function selectTime(el) {
-            const slots = document.querySelectorAll('.time-slot');
-            slots.forEach(s => s.classList.remove('active'));
-            el.classList.add('active');
-            selectedTimeText = el.innerText;
-        }
-
-        function confirmBooking() {
-            showToast(`Consulta agendada com sucesso! Um lembrete será enviado via WhatsApp.`, "success");
-        }
 
         // Checkout & Products
         let isPublicCheckout = false;
@@ -11369,7 +11350,7 @@
         }
 
         // ============================================================================
-        // DYNAMIC YEAR-ROUND BOOKING CALENDAR & INSTANT DISPATCH ENGINE
+        // DYNAMIC YEAR-ROUND BOOKING CALENDAR & REAL-TIME SLOT SUSPENSION ENGINE
         // ============================================================================
         let bookingSelectedYear = 2026;
         let bookingSelectedMonth = 7; // Agosto (0-indexed: 7 = August)
@@ -11385,6 +11366,96 @@
             "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira",
             "Quinta-feira", "Sexta-feira", "Sábado"
         ];
+
+        function isSameDayAppointment(dateVal, targetYear, targetMonthIndex, targetDay) {
+            if (!dateVal) return false;
+            try {
+                if (typeof dateVal === 'string') {
+                    const clean = dateVal.trim();
+                    // Check DD/MM/YYYY
+                    if (clean.includes('/')) {
+                        const parts = clean.split('/');
+                        if (parts.length === 3) {
+                            const day = parseInt(parts[0], 10);
+                            const month = parseInt(parts[1], 10) - 1;
+                            const year = parseInt(parts[2], 10);
+                            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                                return (day === targetDay && month === targetMonthIndex && year === targetYear);
+                            }
+                        }
+                    }
+                    // Check YYYY-MM-DD
+                    if (clean.includes('-') && !clean.includes(' de ')) {
+                        const parts = clean.split('-');
+                        if (parts.length === 3 && parts[0].length === 4) {
+                            const year = parseInt(parts[0], 10);
+                            const month = parseInt(parts[1], 10) - 1;
+                            const day = parseInt(parts[2], 10);
+                            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                                return (day === targetDay && month === targetMonthIndex && year === targetYear);
+                            }
+                        }
+                    }
+                    // Check "DD de Mês de YYYY"
+                    if (clean.includes(' de ')) {
+                        const parts = clean.split(' de ');
+                        if (parts.length >= 3) {
+                            const day = parseInt(parts[0], 10);
+                            const mStr = parts[1].toLowerCase().trim();
+                            const year = parseInt(parts[2], 10);
+                            const monthsNames = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+                            const monthsShort = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+                            let monthIdx = monthsNames.indexOf(mStr);
+                            if (monthIdx === -1) {
+                                monthIdx = monthsShort.indexOf(mStr.substring(0, 3));
+                            }
+                            if (monthIdx !== -1 && !isNaN(day) && !isNaN(year)) {
+                                return (day === targetDay && monthIdx === targetMonthIndex && year === targetYear);
+                            }
+                        }
+                    }
+                    const d = parsePtDate(clean);
+                    if (d && !isNaN(d.getTime())) {
+                        return (d.getFullYear() === targetYear && d.getMonth() === targetMonthIndex && d.getDate() === targetDay);
+                    }
+                } else if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
+                    return (dateVal.getFullYear() === targetYear && dateVal.getMonth() === targetMonthIndex && dateVal.getDate() === targetDay);
+                }
+            } catch (err) {
+                console.error("[AmazingFranklin] Erro em isSameDayAppointment:", err);
+            }
+            return false;
+        }
+
+        function isSlotOccupied(nutriEmail, year, monthIndex, day, timeStr) {
+            if (!timeStr) return false;
+            const cleanTime = timeStr.trim();
+            const stored = localStorage.getItem('amazing_franklin_appointments_list');
+            if (stored) {
+                try { appointmentsList = JSON.parse(stored); } catch(e) {}
+            }
+
+            return appointmentsList.some(a => {
+                if (!a) return false;
+                if (a.status === 'Cancelado' || a.status === 'cancelled') return false;
+                
+                // Match nutritionist email if specified
+                if (nutriEmail && a.nutriEmail) {
+                    if (a.nutriEmail.toLowerCase() !== nutriEmail.toLowerCase()) {
+                        return false;
+                    }
+                }
+
+                // Match target day
+                if (!isSameDayAppointment(a.date, year, monthIndex, day)) {
+                    return false;
+                }
+
+                // Match time
+                const aTime = (a.time || "").trim();
+                return (aTime === cleanTime);
+            });
+        }
 
         function changeBookingMonth(delta) {
             bookingSelectedMonth += delta;
@@ -11419,17 +11490,60 @@
             renderPatientBookingTab();
         }
 
+        function cancelPatientAppointment(apptId) {
+            const stored = localStorage.getItem('amazing_franklin_appointments_list');
+            if (stored) {
+                try { appointmentsList = JSON.parse(stored); } catch(e) {}
+            }
+
+            const appt = appointmentsList.find(a => a.id === apptId);
+            if (!appt) return;
+
+            const confirmMsg = `Tem certeza que deseja cancelar sua consulta agendada para ${appt.date} às ${appt.time}? O horário será imediatamente liberado na agenda.`;
+            if (confirm(confirmMsg)) {
+                appointmentsList = appointmentsList.filter(a => a.id !== apptId);
+                localStorage.setItem('amazing_franklin_appointments_list', JSON.stringify(appointmentsList));
+                localStorage.setItem('amazing_franklin_appointments', JSON.stringify(appointmentsList));
+
+                renderPatientBookingTab();
+                renderAppointmentsList();
+                renderWeeklySchedule();
+                loadPatientDashboard();
+
+                showToast("✅ Consulta desmarcada com sucesso! O horário foi liberado na agenda da nutricionista.", "success");
+            }
+        }
+
         function renderPatientBookingTab() {
             const container = document.getElementById('patient-booking-container');
             if (!container) return;
+
+            const stored = localStorage.getItem('amazing_franklin_appointments_list');
+            if (stored) {
+                try { appointmentsList = JSON.parse(stored); } catch(e) {}
+            }
 
             const loggedEmail = localStorage.getItem('amazing_franklin_logged_in_email') || sessionStorage.getItem('amazing_franklin_logged_in_email');
             let patient = null;
             if (loggedEmail) {
                 patient = patientsList.find(p => p.email && p.email.toLowerCase() === loggedEmail.toLowerCase());
             }
+            if (!patient && currentPatientName) {
+                patient = patientsList.find(p => p.name && p.name.toLowerCase() === currentPatientName.toLowerCase());
+            }
+            if (!patient && patientData) {
+                patient = patientData;
+            }
 
-            const isUnlinked = !patient || !patient.nutriEmail;
+            let targetNutri = nutriProfile;
+            if (patient && patient.nutriEmail) {
+                const matched = nutriAccounts.find(n => n.email && n.email.toLowerCase() === patient.nutriEmail.toLowerCase());
+                if (matched) targetNutri = matched;
+            } else if (nutriAccounts.length > 0) {
+                targetNutri = nutriAccounts[0];
+            }
+
+            const isUnlinked = (!patient || (!patient.nutriEmail && !patientData.nutriEmail)) && (!nutriProfile || !nutriProfile.name);
 
             if (isUnlinked) {
                 container.innerHTML = `
@@ -11448,8 +11562,6 @@
                 `;
                 return;
             }
-
-            const targetNutri = (patient && patient.nutriEmail) ? (nutriAccounts.find(n => n.email.toLowerCase() === patient.nutriEmail.toLowerCase()) || nutriProfile) : nutriProfile;
 
             // Compute calendar days for selected month & year
             const daysInMonth = new Date(bookingSelectedYear, bookingSelectedMonth + 1, 0).getDate();
@@ -11484,11 +11596,90 @@
             }
 
             const availableTimes = ["08:00", "09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+            
+            // Check available vs occupied time slots for target nutritionist on selected day
+            const occupiedTimes = [];
+            const freeTimes = [];
+            availableTimes.forEach(t => {
+                if (isSlotOccupied(targetNutri.email, bookingSelectedYear, bookingSelectedMonth, bookingSelectedDay, t)) {
+                    occupiedTimes.push(t);
+                } else {
+                    freeTimes.push(t);
+                }
+            });
+
+            // If selected time is currently occupied, auto-switch to first available slot
+            if (occupiedTimes.includes(bookingSelectedTime)) {
+                bookingSelectedTime = freeTimes.length > 0 ? freeTimes[0] : null;
+            } else if (!bookingSelectedTime && freeTimes.length > 0) {
+                bookingSelectedTime = freeTimes[0];
+            }
+
             let timeSlotsHTML = "";
             availableTimes.forEach(t => {
-                const isAct = (t === bookingSelectedTime) ? "active" : "";
-                timeSlotsHTML += `<div class="time-slot ${isAct}" onclick="selectBookingTime('${t}')" style="cursor: pointer;">${t}</div>`;
+                const isOccupied = occupiedTimes.includes(t);
+                if (isOccupied) {
+                    timeSlotsHTML += `
+                        <div class="time-slot occupied disabled" title="Horário já reservado na agenda da nutricionista">
+                            <span>${t}</span>
+                            <span class="slot-occupied-tag">Ocupado</span>
+                        </div>
+                    `;
+                } else {
+                    const isAct = (t === bookingSelectedTime) ? "active" : "";
+                    timeSlotsHTML += `<div class="time-slot ${isAct}" onclick="selectBookingTime('${t}')" style="cursor: pointer;">${t}</div>`;
+                }
             });
+
+            const allOccupiedMessage = freeTimes.length === 0 
+                ? `<div style="background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2); border-radius: var(--radius-sm); padding: 0.75rem 1rem; color: #dc2626; font-size: 0.85rem; font-weight: 600; margin-top: 0.75rem; text-align: center;">
+                    ⚠️ Todos os horários deste dia estão ocupados. Por favor, escolha outra data no calendário.
+                   </div>`
+                : "";
+
+            // Find current patient's active scheduled appointments with this nutritionist
+            const pName = patient ? patient.name : (currentPatientName || "");
+            const myUpcomingAppts = appointmentsList.filter(a => {
+                if (!a || a.status === 'Cancelado' || a.status === 'cancelled') return false;
+                const matchesPatient = (a.patientName && a.patientName.trim().toLowerCase() === pName.trim().toLowerCase());
+                return matchesPatient;
+            });
+
+            let myApptsHTML = "";
+            if (myUpcomingAppts.length > 0) {
+                myApptsHTML = `
+                    <div class="patient-my-appts-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+                            <h4 style="margin: 0; color: var(--primary-slate); font-size: 0.95rem; font-weight: 700;">
+                                📋 Minhas Consultas Agendadas
+                            </h4>
+                            <span class="badge-status active" style="font-size: 0.75rem;">${myUpcomingAppts.length} agendamento(s)</span>
+                        </div>
+                        ${myUpcomingAppts.map(a => `
+                            <div class="patient-my-appt-item">
+                                <div>
+                                    <strong style="color: var(--primary-slate); font-size: 0.9rem; display: block;">
+                                        📅 ${a.date} às ${a.time}
+                                    </strong>
+                                    <span style="font-size: 0.78rem; color: var(--text-light);">
+                                        Profissional: <strong>${a.nutriName || targetNutri.name}</strong> • ${a.type === 'Online' ? '💻 Telemedicina' : '🏥 Presencial'}
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    ${a.type === 'Online' ? `
+                                        <button class="btn-action btn-action-primary" style="font-size: 0.75rem; padding: 0.4rem 0.75rem; background: var(--primary-olive);" onclick="startPatientTelemedCall()">
+                                            Entrar na Chamada
+                                        </button>
+                                    ` : ''}
+                                    <button class="btn-action btn-action-secondary" style="font-size: 0.75rem; padding: 0.4rem 0.75rem; color: var(--terracotta); border-color: var(--terracotta);" onclick="cancelPatientAppointment('${a.id}')" title="Desmarcar consulta e liberar horário">
+                                        ❌ Desmarcar
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
 
             container.innerHTML = `
                 <div class="card" style="margin-bottom: 2rem;">
@@ -11496,7 +11687,7 @@
                         <div>
                             <h3 class="card-title" style="margin: 0;">Marque uma Nova Consulta</h3>
                             <p style="color: var(--text-light); margin: 0.25rem 0 0 0; font-size: 0.9rem;">
-                                Escolha o melhor dia e horário na agenda da <strong>${targetNutri.name || 'Dra. Tatiane Cardoso'}</strong>. O lembrete e link serão enviados no mesmo instante por WhatsApp e E-mail.
+                                Escolha o melhor dia e horário na agenda da <strong>${targetNutri.name || 'Dra. Tatiane Cardoso'}</strong>. Os horários ocupados são suspensos automaticamente para evitar duplicidades.
                             </p>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -11560,6 +11751,7 @@
                                 <div class="time-slots">
                                     ${timeSlotsHTML}
                                 </div>
+                                ${allOccupiedMessage}
                             </div>
 
                             <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
@@ -11569,12 +11761,14 @@
                                         ⚡ WhatsApp & E-mail Imediatos
                                     </span>
                                 </div>
-                                <button class="btn-primary" style="width: 100%; padding: 0.85rem 1rem; font-size: 1rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; box-shadow: var(--shadow-md);" onclick="confirmBooking()">
+                                <button class="btn-primary" ${freeTimes.length === 0 ? 'disabled' : ''} style="width: 100%; padding: 0.85rem 1rem; font-size: 1rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.5rem; cursor: ${freeTimes.length === 0 ? 'not-allowed' : 'pointer'}; opacity: ${freeTimes.length === 0 ? '0.6' : '1'}; box-shadow: var(--shadow-md);" onclick="confirmBooking()">
                                     ✅ Confirmar Agendamento & Disparar Avisos
                                 </button>
                             </div>
                         </div>
                     </div>
+
+                    ${myApptsHTML}
                 </div>
             `;
         }
@@ -11588,32 +11782,61 @@
             const patientName = patient ? patient.name : (currentPatientName || "Frederico Augusto Moreira da Encarnação");
             const nutri = (patient && patient.nutriEmail) ? (nutriAccounts.find(n => n.email.toLowerCase() === patient.nutriEmail.toLowerCase()) || nutriProfile) : nutriProfile;
 
+            const timeStr = bookingSelectedTime || "14:00";
+            const typeStr = bookingSelectedType || "Online";
+
+            // Collision check: verify if the slot was already occupied
+            if (isSlotOccupied(nutri.email, bookingSelectedYear, bookingSelectedMonth, bookingSelectedDay, timeStr)) {
+                showToast("⚠️ Este horário já foi reservado na agenda da nutricionista. Por favor, escolha outro horário disponível.", "warning");
+                renderPatientBookingTab();
+                return;
+            }
+
             const selectedDateObj = new Date(bookingSelectedYear, bookingSelectedMonth, bookingSelectedDay);
             const selectedWeekDayName = weekDayNamesPT[selectedDateObj.getDay()];
             const selectedMonthName = monthNamesPT[bookingSelectedMonth];
             const dateFormatted = `${String(bookingSelectedDay).padStart(2, '0')}/${String(bookingSelectedMonth + 1).padStart(2, '0')}/${bookingSelectedYear}`;
-            const timeStr = bookingSelectedTime || "14:00";
-            const typeStr = bookingSelectedType || "Online";
+            const formattedDateFull = `${String(bookingSelectedDay).padStart(2, '0')} de ${selectedMonthName} de ${bookingSelectedYear}`;
+            const dateIso = `${bookingSelectedYear}-${String(bookingSelectedMonth + 1).padStart(2, '0')}-${String(bookingSelectedDay).padStart(2, '0')}`;
 
             // Add or update appointment in appointmentsList
             const newAppt = {
                 id: `appt-${Date.now()}`,
                 patientName: patientName,
+                patientEmail: patient ? patient.email : (loggedEmail || ""),
                 nutriEmail: nutri.email || "tati.cardoso@nutricionista.com.br",
-                date: dateFormatted,
+                nutriName: nutri.name || "Dra. Tatiane Cardoso",
+                date: formattedDateFull,
+                dateShort: dateFormatted,
+                dateIso: dateIso,
                 time: timeStr,
                 type: typeStr,
                 status: "Confirmado",
-                modality: typeStr === "Online" ? "Telemedicina (Vídeo)" : "Presencial"
+                modality: typeStr === "Online" ? "Telemedicina (Vídeo)" : "Presencial",
+                link: typeStr === "Online" ? `https://meet.jit.si/TatiCardoso-${patientName.replace(/\s+/g, '')}-${bookingSelectedYear}${String(bookingSelectedMonth+1).padStart(2,'0')}` : ""
             };
 
+            const stored = localStorage.getItem('amazing_franklin_appointments_list');
+            if (stored) {
+                try { appointmentsList = JSON.parse(stored); } catch(e) {}
+            }
+
             appointmentsList.unshift(newAppt);
+            localStorage.setItem('amazing_franklin_appointments_list', JSON.stringify(appointmentsList));
             localStorage.setItem('amazing_franklin_appointments', JSON.stringify(appointmentsList));
 
             // Instant WhatsApp Message creation & direct trigger
             const cleanPhone = (nutri.phone || "(11) 98888-8888").replace(/\D/g, '');
             const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
             const waText = encodeURIComponent(`Olá ${nutri.name}! Sou o paciente ${patientName} e acabei de confirmar meu agendamento na plataforma:\n\n📅 Data: ${selectedWeekDayName}, ${bookingSelectedDay} de ${selectedMonthName} de ${bookingSelectedYear}\n⏰ Horário: ${timeStr}\n💻 Modalidade: ${typeStr === 'Online' ? 'Telemedicina ao Vivo' : 'Consultório Presencial'}\n\nAguardando nossa consulta! 🌿`);
+            const waUrl = `https://api.whatsapp.com/send?phone=${fullPhone}&text=${waText}`;
+
+            // Sync all portals and calendars
+            renderPatientBookingTab();
+            renderAppointmentsList();
+            renderWeeklySchedule();
+            loadPatientDashboard();
+
             // Instant Toast
             showToast(`✅ Consulta agendada com sucesso! Avisos disparados por WhatsApp e E-mail.`, "success");
 
@@ -11944,12 +12167,8 @@
                 // Find appointments for this day
                 const activeAppts = getActiveNutriAppointmentsList();
                 const dayAppts = activeAppts.filter(a => {
-                    if (!a.date) return false;
-                    const aDateClean = a.date.trim();
-                    return aDateClean === formattedDateFull || 
-                           aDateClean === formattedDateShort ||
-                           aDateClean.startsWith(`${dayNum} de `) ||
-                           aDateClean.startsWith(`${dayNum.toString().padStart(2, '0')} de `);
+                    if (!a || !a.date || a.status === 'Cancelado' || a.status === 'cancelled') return false;
+                    return isSameDayAppointment(a.date, currentDay.getFullYear(), currentDay.getMonth(), dayNum);
                 });
 
                 // Sort by start time

@@ -666,6 +666,40 @@ Implementar para a Farmácia de Manipulação Parceira:
 
 ---
 
+# Backlog: Sincronização em Tempo Real de Agendamento Paciente-Nutricionista & Suspensão de Horários Ocupados (EP-10 Story 1)
+
+Garantir que:
+1. **Sincronização Imediata na Agenda da Nutricionista**: Ao confirmar um agendamento pelo login do paciente, a consulta reflete imediatamente na **Agenda Semanal** (`tab-nutri-schedule`) e na **Lista de Atendimentos** (`#nutri-appointments-list`) da respectiva nutricionista.
+2. **Bloqueio / Suspensão Automática de Horários Ocupados**: O horário escolhido fica suspenso e marcado como **Ocupado / Indisponível** na agenda da nutricionista, impedindo que outro paciente marque o mesmo horário e evitando atendimentos duplicados.
+3. **Liberação Automática do Horário em Caso de Cancelamento ou Remarcação**: Caso o paciente ou a nutricionista cancele ou altere o horário da consulta, aquele horário volta a ficar 100% disponível para novos agendamentos na plataforma.
+4. **Isolamento por Nutricionista**: Os horários bloqueados pertencem exclusivamente à nutricionista com quem a consulta foi marcada, sem bloquear agendas de outras profissionais.
+
+## 🛠️ Implementation Checklist
+
+### 1. Product Owner (PO Requirements & Acceptance Criteria)
+- [x] O agendamento realizado pelo paciente deve gravar os dados com `nutriEmail`, `patientName`, `date`, `time`, `type` e `status: "Confirmado"` na chave persistente `amazing_franklin_appointments_list`.
+- [x] O horário reservado deve ficar desabilitado e marcado como Ocupado no calendário de agendamento de outros pacientes para aquela nutricionista.
+- [x] A consulta deve aparecer na Agenda Semanal (`renderWeeklySchedule`) e na Lista de Atendimentos (`renderAppointmentsList`) da nutricionista responsável.
+- [x] Cancelamento ou reagendamento (pelo paciente ou pela nutricionista) deve liberar imediatamente o horário para novos agendamentos.
+
+### 2. CSS Styling (UX Specialist)
+- [x] Estilizar os horários ocupados `.time-slot.occupied`, `.time-slot.disabled` com indicação visual clara de indisponibilidade e hover proibido.
+- [x] Estilizar a seção de "Minhas Consultas Agendadas" com botão de cancelamento no portal do paciente.
+
+### 3. HTML & JS Logic (Senior Developer)
+- [x] Criar função `isSameDayAppointment(dateVal, targetYear, targetMonthIndex, targetDay)` para compatibilizar e normalizar todos os formatos de data (ISO, DD/MM/YYYY, "DD de Mês de YYYY").
+- [x] Criar função `isSlotOccupied(nutriEmail, year, month, day, timeStr)` para checar ocupação de horários.
+- [x] Atualizar `renderPatientBookingTab()` para verificar horários ocupados e desabilitar seleção.
+- [x] Atualizar `confirmBooking()` para validar se o horário ainda está livre antes de gravar, salvar em `amazing_franklin_appointments_list` e gerar URL completa de WhatsApp.
+- [x] Atualizar `renderWeeklySchedule()` para usar `isSameDayAppointment()` e renderizar os agendamentos na coluna correta da semana.
+- [x] Implementar `cancelPatientAppointment(apptId)` para permitir cancelamento direto pelo paciente com liberação imediata do horário.
+
+### 4. QA Validation Specs (QA Tester)
+- [x] Criar suite E2E Playwright validando agendamento pelo paciente, bloqueio do horário para outros pacientes, exibição na agenda da nutricionista e liberação do horário após cancelamento.
+- [x] Executar `npm test` garantindo zero regressões em todos os testes unitários.
+
+---
+
 # Backlog: Ficha Clínica - Upload e Pré-Visualização de Fotos de Evolução Visual (Campo 4)
 
 Implementar e corrigir o upload das Fotos de Evolução Visual (Foto de Antes e Foto de Depois) na aba de Novo Atendimento da Nutricionista:
