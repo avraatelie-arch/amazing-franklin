@@ -18272,6 +18272,38 @@
 
         window.addEventListener('resize', drawHoloLines);
         window.addEventListener('load', () => {
+            // Automated Clean Wipe for Fresh Test Runs in Deploy
+            const DEPLOY_STATE_VERSION = "2026_08_25_ZEROED_FRESH_V2";
+            if (localStorage.getItem('amazing_franklin_state_version') !== DEPLOY_STATE_VERSION) {
+                localStorage.clear();
+                sessionStorage.clear();
+                localStorage.setItem('amazing_franklin_state_version', DEPLOY_STATE_VERSION);
+                localStorage.setItem('amazing_franklin_fresh_mode', 'true');
+                
+                patientsList = [];
+                productsList = [];
+                patientPrescriptions = [];
+                supplierOrders = [];
+                supplierAccounts = [];
+                supplierReviews = [];
+                nutriAccounts = [];
+                appointmentsList = [];
+                patientNotifications = [];
+                patientExamsList = [];
+                
+                localStorage.setItem('amazing_franklin_patients_list', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_products_list', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_patient_prescriptions', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_supplier_orders', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_supplier_accounts', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_supplier_reviews', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_all_nutris', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_appointments_list', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_appointments', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_patient_notifications', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_patient_exams', JSON.stringify([]));
+            }
+
             // Sync lists cleanly from localStorage
             patientsList = safeParseJSON('amazing_franklin_patients_list', []);
             productsList = safeParseJSON('amazing_franklin_products_list', []);
