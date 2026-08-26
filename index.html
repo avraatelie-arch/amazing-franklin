@@ -773,7 +773,7 @@
                             </div>
                         </div>
                         <div>
-                            <div class="patient-kpi-value" id="kpi-val-diet" style="font-size: 1.05rem; line-height: 1.3;">Hipertrofia & Definição V3</div>
+                            <div class="patient-kpi-value" id="kpi-val-diet" style="font-size: 1.05rem; line-height: 1.3;">Plano Alimentar Personalizado</div>
                             <div class="patient-kpi-sub">
                                 <span style="color: var(--primary-olive); font-weight: 600;">Status:</span>
                                 <span id="kpi-val-status">Ativo (Consultório)</span>
@@ -1884,8 +1884,8 @@
                                     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 </div>
                                 <div>
-                                    <strong style="color: var(--primary-slate); font-size: 1rem; display: block;">Plano Alimentar Ativo: Hipertrofia & Definição V3</strong>
-                                    <span style="font-size: 0.8rem; color: var(--text-light);">Arquivo PDF • 1.8 MB • Guia de Substituições & Refeições</span>
+                                    <strong style="color: var(--primary-slate); font-size: 1rem; display: block;" id="patient-evolution-diet-title">Plano Alimentar Ativo</strong>
+                                    <span style="font-size: 0.8rem; color: var(--text-light);">Arquivo PDF • Guia de Substituições & Refeições</span>
                                 </div>
                             </div>
                             <button class="btn-action btn-action-primary" style="padding: 0.6rem 1.2rem; font-size: 0.85rem;" onclick="triggerReportDownload('Plano_Alimentar_V3_AnaPaula.pdf')">
@@ -6778,7 +6778,7 @@
                 if (kpiGordura) kpiGordura.innerText = `${latestC.bodyFat}%`;
                 if (kpiMassa) kpiMassa.innerText = `${latestC.muscleMass} kg`;
                 if (kpiAgua) kpiAgua.innerText = `${latestC.waterPct}%`;
-                if (kpiDiet) kpiDiet.innerText = latestC.diet || "Plano Alimentar Ativo";
+                if (kpiDiet) kpiDiet.innerText = latestC.diet || (patient.objective ? `Protocolo ${patient.objective}` : "Plano Alimentar Ativo");
                 
                 if (firstC && firstC !== latestC && kpiSubPeso) {
                     const diff = latestC.weight - firstC.weight;
@@ -6803,11 +6803,16 @@
                 if (kpiGordura) kpiGordura.innerText = "--%";
                 if (kpiMassa) kpiMassa.innerText = "-- kg";
                 if (kpiAgua) kpiAgua.innerText = "--%";
-                if (kpiDiet) kpiDiet.innerText = "Nenhum plano prescrito ainda";
+                if (kpiDiet) kpiDiet.innerText = patient.objective ? `Foco: ${patient.objective}` : "Nenhum plano prescrito ainda";
+            }
+
+            const evoDietTitle = document.getElementById('patient-evolution-diet-title');
+            if (evoDietTitle) {
+                evoDietTitle.innerText = latestC ? `Plano Alimentar Ativo: ${latestC.diet}` : (patient.objective ? `Plano Alimentar Foco em: ${patient.objective}` : "Plano Alimentar Ativo");
             }
 
             if (kpiTargetPeso) kpiTargetPeso.innerText = `Meta: ${patient.objective || 'Prevenção & Bem-estar'}`;
-            if (kpiStatus) kpiStatus.innerText = patient.status || 'Novo Paciente';
+            if (kpiStatus) kpiStatus.innerText = patient.status || 'Ativo (Consultório)';
 
             if (latestAppt) {
                 if (kpiNextDate) kpiNextDate.innerText = latestAppt.date.split(' de ')[0] + ' de ' + (latestAppt.date.split(' de ')[1] || 'Junho');
@@ -7372,7 +7377,20 @@
 
             // Tailored meals generation
             let meals = [];
-            if (dietTitle.toLowerCase().includes('hipertrofia')) {
+            const isGestacional = dietTitle.toLowerCase().includes('gestacional') || (patient.objective && patient.objective.toLowerCase().includes('gestacional'));
+            const isHipertrofia = dietTitle.toLowerCase().includes('hipertrofia') || (patient.objective && patient.objective.toLowerCase().includes('hipertrofia'));
+            const isQueima = dietTitle.toLowerCase().includes('queima') || dietTitle.toLowerCase().includes('gordura') || (patient.objective && (patient.objective.toLowerCase().includes('perda') || patient.objective.toLowerCase().includes('emagrecimento')));
+
+            if (isGestacional) {
+                meals = [
+                    { time: "07:30", title: "Café da Manhã (Aporte de Folato & Cálcio)", items: "2 Ovos mexidos com azeite extravirgem + 2 fatias de pão 100% integral + 1 fatia de queijo branco pasteurizado + 1 copo de suco de laranja natural fresco ou água com gotas de limão.", sub: "Substituição: Vitamina de leite vegetal enriquecido com cálcio batido com 1 banana e 2 colheres de aveia em flocos finos." },
+                    { time: "10:00", title: "Lanche da Manhã (Prevenção de Enjoo & Hidratação)", items: "1 Maçã ou pêra fatiada + 3 castanhas-do-pará + 2 biscoitos integrais de aveia.", sub: "Substituição: 1 pote de iogurte natural integral com 1 colher de sobremesa de sementes de chia." },
+                    { time: "12:30", title: "Almoço (Rico em Ferro, Folato & Proteínas Magras)", items: "150g de Filé de peixe bem cozido (tilápia ou salmão) ou peito de frango + 100g de arroz integral + 1 concha de feijão carioca com folhas de espinafre + Salada crua higienizada com azeite extravirgem e limão.", sub: "Substituição: 140g de carne bovina magra grelhada bem passada + 120g de purê de mandioquinha." },
+                    { time: "16:00", title: "Lanche da Tarde (Energia de Liberação Lenta)", items: "1 Banana prata amassada com 1 colher de sopa de farelo de aveia e canela em pó + 1 copo de água de coco natural (200ml).", sub: "Substituição: 1 fatia de pão integral com pasta de ricota temperada e orégano." },
+                    { time: "19:30", title: "Jantar (Digestão Suave & Conforto Materno)", items: "130g de Sobrecoxa sem pele assada ou pescada branca ao forno com legumes no vapor (cenoura, abobrinha e brócolis) + 80g de quinoa cozida.", sub: "Substituição: Sopa nutritiva de abóbora cabotiá com frango desfiado e cúrcuma." },
+                    { time: "21:30", title: "Ceia (Magnésio & Sono Reparador)", items: "1 Xícara de chá de camomila ou erva-doce morno + 1 torrada integral com pasta de castanha de caju.", sub: "Substituição: 1/2 copo de leite vegetal morno com pitada de noz-moscada." }
+                ];
+            } else if (isHipertrofia) {
                 meals = [
                     { time: "07:30", title: "Café da Manhã (Desjejum Anabólico)", items: "3 Ovos mexidos no azeite de oliva extravirgem + 2 fatias de pão 100% integral + 1 fatia de queijo minas frescal + 1 xícara de café preto sem açúcar ou chá verde.", sub: "Substituição: 1 scoop de Whey Protein 80% batido com 180ml de leite vegetal e 40g de aveia em flocos finos." },
                     { time: "10:30", title: "Lanche da Manhã", items: "1 Maçã gala ou pêra com casca + 20g de castanhas de caju ou nozes picadas.", sub: "Substituição: 1 barra de proteína de boa qualidade ou 1 porção de frutas vermelhas frescas." },
@@ -7381,7 +7399,7 @@
                     { time: "19:30", title: "Jantar (Recuperação Muscular)", items: "150g de Filé de mignon ou frango em cubos com cúrcuma + 130g de batata doce ou mandioca cozida + Legumes no vapor (brócolis, cenoura baby e abobrinha).", sub: "Substituição: Omelete de 3 ovos com espinafre e tomate picado + 1 fatia de pão integral." },
                     { time: "22:00", title: "Ceia / Pré-Sono", items: "1 Pote de iogurte natural desnatado com 1 colher de chá de sementes de chia ou 1 dose de magnésio dimalato com chá de camomila.", sub: "Substituição: 20g de queijo cottage com 3 nozes picadas." }
                 ];
-            } else if (dietTitle.toLowerCase().includes('queima') || dietTitle.toLowerCase().includes('gordura')) {
+            } else if (isQueima) {
                 meals = [
                     { time: "07:30", title: "Café da Manhã (Termogênico)", items: "2 Ovos mexidos com azeite extravirgem + 1 fatia de pão 100% integral + 1 xícara de café preto com canela ou chá verde puro.", sub: "Substituição: 1 scoop de Whey Isolado com 150ml de água e 20g de semente de chia." },
                     { time: "10:30", title: "Lanche da Manhã", items: "1 Pêra ou 1 porção de morangos frescos + 15g de amêndoas cruas.", sub: "Substituição: 1 iogurte proteico zero lactose e zero açúcar." },
@@ -8582,7 +8600,7 @@
                     document.getElementById('input-circ-calf-l').value = latest.circunferencias['calf-l'] || 36.6;
 
                     document.getElementById('input-notes').value = "Consulta clínica de acompanhamento e bioimpedância.";
-                    document.getElementById('input-dieta').value = latest.diet;
+                    document.getElementById('input-dieta').value = latest.diet || (patient.objective ? `Protocolo ${patient.objective} Personalizado` : "Plano Nutricional Personalizado");
                 } else {
                     document.getElementById('input-peso').value = 70.0;
                     document.getElementById('input-gordura').value = 25.0;
@@ -8603,7 +8621,23 @@
                     document.getElementById('input-circ-calf-l').value = 36.5;
 
                     document.getElementById('input-notes').value = "Consulta clínica de acompanhamento e bioimpedância.";
-                    document.getElementById('input-dieta').value = "Hipertrofia & Definição V4";
+                    
+                    let defaultDietName = "Plano Nutricional Personalizado";
+                    if (patient.objective) {
+                        const objLower = patient.objective.toLowerCase();
+                        if (objLower.includes('gestacional') || objLower.includes('gestante')) {
+                            defaultDietName = "Plano Nutricional Gestacional & Suporte Materno-Fetal";
+                        } else if (objLower.includes('perda') || objLower.includes('emagrecimento') || objLower.includes('peso')) {
+                            defaultDietName = "Protocolo de Queima de Gordura & Déficit Calórico";
+                        } else if (objLower.includes('hipertrofia')) {
+                            defaultDietName = "Programa de Hipertrofia & Ganho de Massa Magra";
+                        } else if (objLower.includes('diabetes')) {
+                            defaultDietName = "Protocolo de Controle Glicêmico & Equilíbrio Insulínico";
+                        } else {
+                            defaultDietName = `Protocolo ${patient.objective} Personalizado`;
+                        }
+                    }
+                    document.getElementById('input-dieta').value = defaultDietName;
                 }
 
                 populateConsultationOptions(patient.objective, patient.status);
