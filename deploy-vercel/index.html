@@ -1415,29 +1415,8 @@
 
             <!-- 6. TAB CHAT (DÚVIDAS / MENSAGENS) -->
             <section id="tab-chat" class="tab-content">
-                <div class="chat-container-box">
-                    <div class="chat-header">
-                        <div class="user-avatar" style="background: var(--bronze-gold);" id="chat-header-avatar">TC</div>
-                        <div class="chat-header-info">
-                            <h3 id="chat-header-title">Canal Direto: Dúvidas Clínicas</h3>
-                            <p id="chat-header-subtitle">Suporte Nutricional • Dra. Tati Cardoso</p>
-                        </div>
-                    </div>
-                    
-                    <div class="chat-messages" id="chat-messages-container">
-                        <!-- Message items dynamic -->
-                    </div>
-
-                    <div class="typing-indicator" id="typing-bubble">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
-
-                    <div class="chat-input-area">
-                        <input type="text" placeholder="Digite sua mensagem..." class="chat-input" id="message-input-text" onkeypress="handleChatKeyPress(event)">
-                        <button class="btn-send" onclick="sendChatMessage()">Enviar</button>
-                    </div>
+                <div id="chat-tab-dynamic-container">
+                    <!-- Rendered dynamically by renderChatMessages() -->
                 </div>
             </section>
 
@@ -5482,10 +5461,9 @@
             history: []
         };
 
-        let chatMessages = {
-            paciente: [],
-            nutri: []
-        };
+        let patientChatsStore = safeParseJSON('amazing_franklin_patient_chats', {});
+        let activeNutriChatPatientEmail = null;
+        let nutriChatSearchFilter = "";
 
         // Authentication Role Switching Logic
         function setLoginRole(role) {
@@ -5871,6 +5849,7 @@
                 productsList = [];
                 auditLogs = [];
                 nutriAccounts = [];
+                patientChatsStore = {};
                 
                 localStorage.setItem('amazing_franklin_patients_list', JSON.stringify([]));
                 localStorage.setItem('amazing_franklin_patient_prescriptions', JSON.stringify([]));
@@ -5879,6 +5858,7 @@
                 localStorage.setItem('amazing_franklin_all_nutris', JSON.stringify([]));
                 localStorage.setItem('amazing_franklin_appointments_list', JSON.stringify([]));
                 localStorage.setItem('amazing_franklin_products_list', JSON.stringify([]));
+                localStorage.setItem('amazing_franklin_patient_chats', JSON.stringify({}));
                 
                 handleLogout();
                 
@@ -9682,66 +9662,335 @@
             }
         }
 
-        // Dynamic Chat Messages Rendering
-        function renderChatMessages() {
-            const container = document.getElementById('chat-messages-container');
-            const headerTitle = document.getElementById('chat-header-title');
-            const headerSubtitle = document.getElementById('chat-header-subtitle');
-            const headerAvatar = document.getElementById('chat-header-avatar');
-            const inputBar = document.querySelector('.chat-input-bar');
-            
-            container.innerHTML = "";
+        // --- Real-Time Bidirectional Patient-Nutritionist Chat Engine ---
 
-            const loggedEmail = localStorage.getItem('amazing_franklin_logged_in_email') || sessionStorage.getItem('amazing_franklin_logged_in_email');
-            let loggedPatient = null;
-            if (loggedEmail) {
-                loggedPatient = patientsList.find(p => p.email && p.email.toLowerCase() === loggedEmail.toLowerCase());
+        function getChatStorageKey(nutriEmail, patientEmail) {
+            const n = (nutriEmail || "").trim().toLowerCase();
+            const p = (patientEmail || "").trim().toLowerCase();
+            return `${n}__${p}`;
+        }
+
+        function getPatientAssignedNutri(patient) {
+            const storedNutris = localStorage.getItem('amazing_franklin_all_nutris');
+            if (storedNutris) {
+                try { nutriAccounts = JSON.parse(storedNutris); } catch(e) {}
+            }
+            const storedNutriProfile = localStorage.getItem('amazing_franklin_nutri_profile');
+            if (storedNutriProfile) {
+                try { nutriProfile = JSON.parse(storedNutriProfile); } catch(e) {}
+            }
+            if (!patient) return nutriProfile;
+            if (patient.nutriEmail) {
+                const found = nutriAccounts.find(n => n.email && n.email.toLowerCase() === patient.nutriEmail.toLowerCase());
+                if (found) return found;
+                if (nutriProfile && nutriProfile.email && nutriProfile.email.toLowerCase() === patient.nutriEmail.toLowerCase()) {
+                    return nutriProfile;
+                }
+            }
+            if (nutriProfile && nutriProfile.name && nutriProfile.name !== "Nutricionista Responsável") {
+                return nutriProfile;
+            }
+            if (nutriAccounts.length > 0) {
+                return nutriAccounts[0];
+            }
+            return nutriProfile;
+        }
+
+        function filterNutriChatPatients(query) {
+            nutriChatSearchFilter = (query || "").trim().toLowerCase();
+            renderChatMessages();
+        }
+
+        function selectNutriChatPatient(patientEmail) {
+            activeNutriChatPatientEmail = patientEmail;
+            
+            // Mark patient messages as read
+            const loggedEmail = localStorage.getItem('amazing_franklin_logged_in_email') || sessionStorage.getItem('amazing_franklin_logged_in_email') || "";
+            const convKey = getChatStorageKey(loggedEmail, patientEmail);
+            if (patientChatsStore[convKey]) {
+                patientChatsStore[convKey].forEach(m => {
+                    if (m.senderRole === 'paciente') m.read = true;
+                });
+                localStorage.setItem('amazing_franklin_patient_chats', JSON.stringify(patientChatsStore));
             }
 
-            if (activeRole === 'paciente') {
-                if (!loggedPatient || !loggedPatient.nutriEmail) {
-                    if (headerTitle) headerTitle.innerText = "Central de Dúvidas";
-                    if (headerSubtitle) headerSubtitle.innerText = "Suporte restrito a pacientes com nutricionista";
-                    if (headerAvatar) {
-                        headerAvatar.innerText = "🔒";
-                        headerAvatar.style.background = "var(--border-color)";
-                    }
-                    if (inputBar) inputBar.style.display = 'none';
+            renderChatMessages();
+        }
 
-                    container.innerHTML = `
-                        <div style="text-align: center; padding: 3rem 1.5rem; background: var(--bg-natural); border-radius: var(--radius-md); border: 1px dashed var(--border-color); color: var(--text-light); margin: 1.5rem auto; max-width: 520px;">
-                            <svg width="44" height="44" fill="none" stroke="var(--primary-olive)" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom: 0.75rem;"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                            <h4 style="margin: 0 0 0.35rem 0; color: var(--primary-slate); font-weight: 700; font-size: 1.1rem;">Canal de Suporte Bloqueado</h4>
-                            <p style="margin: 0 0 1.25rem 0; font-size: 0.88rem; line-height: 1.45;">O envio de dúvidas via chat direto fica disponível assim que você escolher sua nutricionista e se tornar paciente dela.</p>
-                            <button class="btn-buy" onclick="openNutriRankingModal()" style="padding: 0.65rem 1.25rem; background: var(--primary-olive); color: #FFF; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 auto;">
-                                🏆 Ver Ranking de Nutricionistas & Escolher
+        function renderChatMessages() {
+            const dynamicContainer = document.getElementById('chat-tab-dynamic-container');
+            if (!dynamicContainer) return;
+
+            const storedPatients = localStorage.getItem('amazing_franklin_patients_list');
+            if (storedPatients) {
+                try { patientsList = JSON.parse(storedPatients); } catch(e) {}
+            }
+
+            const storedChats = localStorage.getItem('amazing_franklin_patient_chats');
+            if (storedChats) {
+                try { patientChatsStore = JSON.parse(storedChats); } catch(e) {}
+            }
+
+            const loggedEmail = localStorage.getItem('amazing_franklin_logged_in_email') || sessionStorage.getItem('amazing_franklin_logged_in_email') || "";
+
+            if (activeRole === 'paciente') {
+                // Patient View: Direct Chat with assigned Nutritionist
+                let patient = null;
+                if (loggedEmail) {
+                    patient = patientsList.find(p => p.email && p.email.toLowerCase() === loggedEmail.toLowerCase());
+                }
+                if (!patient && currentPatientName) {
+                    patient = patientsList.find(p => p.name && p.name.toLowerCase() === currentPatientName.toLowerCase());
+                }
+                if (!patient && patientData) {
+                    patient = patientData;
+                }
+
+                const targetNutri = getPatientAssignedNutri(patient);
+                const isUnlinked = (!patient || (!patient.nutriEmail && !patientData.nutriEmail)) && (!targetNutri || !targetNutri.name || targetNutri.name === "Nutricionista Responsável");
+
+                if (isUnlinked) {
+                    dynamicContainer.innerHTML = `
+                        <div class="card" style="text-align: center; padding: 3.5rem 1.5rem; max-width: 640px; margin: 2rem auto;">
+                            <div style="width: 64px; height: 64px; background: rgba(96, 115, 97, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto;">
+                                <svg width="32" height="32" fill="none" stroke="var(--primary-olive)" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                            </div>
+                            <h3 style="color: var(--primary-slate); font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Canal de Suporte & Dúvidas Bloqueado</h3>
+                            <p style="color: var(--text-light); font-size: 0.9rem; line-height: 1.5; max-width: 460px; margin: 0 auto 1.5rem auto;">
+                                O envio de mensagens e dúvidas clínicas diretamente pelo consultório fica disponível assim que você escolher sua nutricionista credenciada.
+                            </p>
+                            <button class="btn-buy" onclick="openNutriRankingModal()" style="padding: 0.75rem 1.5rem; background: var(--primary-olive); color: #FFF; border-radius: var(--radius-md); font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0 auto;">
+                                🌿 Escolher Nutricionista & Desbloquear Suporte 💬
                             </button>
                         </div>
                     `;
                     return;
                 }
 
-                if (inputBar) inputBar.style.display = 'flex';
-                headerTitle.innerText = "Canal Direto: Dúvidas Clínicas";
-                headerSubtitle.innerText = "Suporte Nutricional • Dra. Tati Cardoso";
-                headerAvatar.innerText = "TC";
-                headerAvatar.style.background = "var(--bronze-gold)";
+                const nutriEmail = (patient && patient.nutriEmail) ? patient.nutriEmail : (targetNutri.email || "tati.cardoso@nutricionista.com.br");
+                const patientEmail = (patient && patient.email) ? patient.email : (loggedEmail || "paciente@email.com");
+                const convKey = getChatStorageKey(nutriEmail, patientEmail);
+                const messages = patientChatsStore[convKey] || [];
+
+                const nutriInitials = targetNutri.name ? targetNutri.name.split(' ').map(w => w.charAt(0)).slice(0, 2).join('').toUpperCase() : "NC";
+                const specialty = targetNutri.specialty || "Nutrição Clínica & Funcional";
+
+                let messagesHtml = "";
+                if (messages.length === 0) {
+                    messagesHtml = `
+                        <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-light);">
+                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🌿</div>
+                            <h4 style="color: var(--primary-slate); font-size: 1.05rem; margin-bottom: 0.35rem;">Canal Direto com ${targetNutri.name}</h4>
+                            <p style="font-size: 0.85rem; max-width: 420px; margin: 0 auto; line-height: 1.5;">
+                                Envie sua dúvida sobre refeições, horários, receitas ou suplementação. Sua nutricionista responderá diretamente por este canal.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    messages.forEach(m => {
+                        const isSentByMe = (m.senderRole === 'paciente');
+                        const bubbleClass = isSentByMe ? 'sent' : 'received';
+                        const senderLabel = isSentByMe ? 'Você' : (targetNutri.name || 'Nutricionista');
+                        const timeStr = m.timeFormatted || '';
+                        
+                        messagesHtml += `
+                            <div class="message ${bubbleClass}">
+                                <div>${escapeHtml(m.text)}</div>
+                                <div class="message-meta">
+                                    <span>${senderLabel}</span> • <span>${timeStr}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                dynamicContainer.innerHTML = `
+                    <div class="chat-container-box">
+                        <div class="chat-header">
+                            <div class="user-avatar" style="background: var(--bronze-gold);">${nutriInitials}</div>
+                            <div class="chat-header-info">
+                                <h3>Canal Direto: ${targetNutri.name}</h3>
+                                <p>${specialty} • ${targetNutri.crn || 'CRN Ativo'}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-messages" id="chat-messages-container">
+                            ${messagesHtml}
+                        </div>
+
+                        <div class="chat-input-area">
+                            <input type="text" placeholder="Digite sua dúvida para ${targetNutri.name}..." class="chat-input" id="message-input-text" onkeypress="handleChatKeyPress(event)">
+                            <button class="btn-send" onclick="sendChatMessage()">
+                                <span>Enviar</span>
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                const msgBox = document.getElementById('chat-messages-container');
+                if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+
+            } else if (activeRole === 'nutricionista') {
+                // Nutritionist View: Multi-Patient Inbox Layout
+                const myPatients = getActiveNutriPatientsList();
                 
-                chatMessages.paciente.forEach(msg => {
-                    container.innerHTML += `<div class="message ${msg.sender}">${msg.text}</div>`;
+                // Filter patients if search is active
+                const filteredPatients = myPatients.filter(p => {
+                    if (!nutriChatSearchFilter) return true;
+                    return (p.name && p.name.toLowerCase().includes(nutriChatSearchFilter)) ||
+                           (p.email && p.email.toLowerCase().includes(nutriChatSearchFilter)) ||
+                           (p.objective && p.objective.toLowerCase().includes(nutriChatSearchFilter));
                 });
-            } else {
-                if (inputBar) inputBar.style.display = 'flex';
-                headerTitle.innerText = `Atendimento: Ana Paula Silva`;
-                headerSubtitle.innerText = "Dúvidas e mensagens do paciente";
-                headerAvatar.innerText = "AP";
-                headerAvatar.style.background = "var(--primary-olive)";
-                
-                chatMessages.nutri.forEach(msg => {
-                    container.innerHTML += `<div class="message ${msg.sender}">${msg.text}</div>`;
-                });
+
+                // Determine active patient
+                if (!activeNutriChatPatientEmail && filteredPatients.length > 0) {
+                    activeNutriChatPatientEmail = filteredPatients[0].email;
+                }
+
+                let selectedPatient = myPatients.find(p => p.email && p.email.toLowerCase() === (activeNutriChatPatientEmail || "").toLowerCase());
+                if (!selectedPatient && filteredPatients.length > 0) {
+                    selectedPatient = filteredPatients[0];
+                    activeNutriChatPatientEmail = selectedPatient.email;
+                }
+
+                // Render Sidebar Patient Items
+                let patientItemsHtml = "";
+                if (filteredPatients.length === 0) {
+                    patientItemsHtml = `
+                        <div style="text-align: center; padding: 2rem 1rem; color: var(--text-light); font-size: 0.85rem;">
+                            Nenhum paciente encontrado.
+                        </div>
+                    `;
+                } else {
+                    filteredPatients.forEach(p => {
+                        const convKey = getChatStorageKey(loggedEmail, p.email);
+                        const msgs = patientChatsStore[convKey] || [];
+                        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+                        const unreadCount = msgs.filter(m => m.senderRole === 'paciente' && !m.read).length;
+                        
+                        const pInitials = p.name ? p.name.split(' ').map(w => w.charAt(0)).slice(0, 2).join('').toUpperCase() : "P";
+                        const isSelected = selectedPatient && (p.email.toLowerCase() === selectedPatient.email.toLowerCase());
+                        
+                        const snippet = lastMsg ? (lastMsg.senderRole === 'nutricionista' ? `Você: ${lastMsg.text}` : lastMsg.text) : (p.objective ? `Foco: ${p.objective}` : "Nenhuma mensagem ainda");
+                        const timeStr = lastMsg ? (lastMsg.timeFormatted || "") : "";
+
+                        patientItemsHtml += `
+                            <div class="nutri-chat-patient-item ${isSelected ? 'active' : ''}" onclick="selectNutriChatPatient('${p.email}')">
+                                <div class="nutri-chat-patient-avatar">${pInitials}</div>
+                                <div class="nutri-chat-patient-info">
+                                    <div class="nutri-chat-patient-name">
+                                        <span>${p.name}</span>
+                                        <span class="nutri-chat-patient-time">${timeStr}</span>
+                                    </div>
+                                    <div class="nutri-chat-patient-snippet" style="display: flex; align-items: center; justify-content: space-between;">
+                                        <span>${escapeHtml(snippet)}</span>
+                                        ${unreadCount > 0 ? `<span class="nutri-chat-unread-badge">${unreadCount}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Render Active Chat Pane
+                let activeChatPaneHtml = "";
+                if (selectedPatient) {
+                    const convKey = getChatStorageKey(loggedEmail, selectedPatient.email);
+                    const messages = patientChatsStore[convKey] || [];
+                    const pInitials = selectedPatient.name ? selectedPatient.name.split(' ').map(w => w.charAt(0)).slice(0, 2).join('').toUpperCase() : "P";
+
+                    let threadHtml = "";
+                    if (messages.length === 0) {
+                        threadHtml = `
+                            <div style="text-align: center; padding: 3rem 1.5rem; color: var(--text-light);">
+                                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">💬</div>
+                                <h4 style="color: var(--primary-slate); font-size: 1.05rem; margin-bottom: 0.35rem;">Conversa com ${selectedPatient.name}</h4>
+                                <p style="font-size: 0.85rem; max-width: 400px; margin: 0 auto; line-height: 1.5;">
+                                    Envie uma mensagem ou aguarde as dúvidas enviadas pelo paciente através do portal dele.
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        messages.forEach(m => {
+                            const isSentByNutri = (m.senderRole === 'nutricionista');
+                            const bubbleClass = isSentByNutri ? 'sent' : 'received';
+                            const senderLabel = isSentByNutri ? 'Você (Nutricionista)' : selectedPatient.name;
+                            const timeStr = m.timeFormatted || '';
+
+                            threadHtml += `
+                                <div class="message ${bubbleClass}">
+                                    <div>${escapeHtml(m.text)}</div>
+                                    <div class="message-meta">
+                                        <span>${senderLabel}</span> • <span>${timeStr}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    activeChatPaneHtml = `
+                        <div class="nutri-chat-main-pane">
+                            <div class="chat-header" style="background: var(--primary-slate);">
+                                <div class="user-avatar" style="background: var(--primary-olive);">${pInitials}</div>
+                                <div class="chat-header-info" style="flex: 1;">
+                                    <h3>${selectedPatient.name}</h3>
+                                    <p>${selectedPatient.objective ? `Objetivo: ${selectedPatient.objective}` : 'Paciente Ativo'} • ${selectedPatient.status || 'Consultório'}</p>
+                                </div>
+                                <button class="btn-action" onclick="openPatientProfileModal('${selectedPatient.name}')" style="background: rgba(255,255,255,0.15); color: #FFF; border: none; font-size: 0.8rem; padding: 0.4rem 0.85rem; border-radius: var(--radius-sm); cursor: pointer;">
+                                    📋 Ver Prontuário
+                                </button>
+                            </div>
+
+                            <div class="chat-messages" id="chat-messages-container">
+                                ${threadHtml}
+                            </div>
+
+                            <div class="chat-input-area">
+                                <input type="text" placeholder="Responder para ${selectedPatient.name}..." class="chat-input" id="message-input-text" onkeypress="handleChatKeyPress(event)">
+                                <button class="btn-send" onclick="sendChatMessage()">
+                                    <span>Enviar Resposta</span>
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    activeChatPaneHtml = `
+                        <div class="chat-empty-selection">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+                            <h3 style="color: var(--primary-slate); font-size: 1.15rem; margin-bottom: 0.5rem;">Selecione um paciente</h3>
+                            <p style="max-width: 320px; font-size: 0.88rem; line-height: 1.45;">Escolha um paciente na lista ao lado para visualizar o histórico de dúvidas e responder em tempo real.</p>
+                        </div>
+                    `;
+                }
+
+                dynamicContainer.innerHTML = `
+                    <div class="nutri-chat-layout">
+                        <!-- Left Sidebar -->
+                        <div class="nutri-chat-sidebar">
+                            <div class="nutri-chat-sidebar-header">
+                                <h4>
+                                    <span>Pacientes</span>
+                                    <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-light);">${filteredPatients.length} cadastrados</span>
+                                </h4>
+                                <input type="text" class="nutri-chat-search" placeholder="🔍 Buscar paciente..." value="${escapeHtml(nutriChatSearchFilter)}" oninput="filterNutriChatPatients(this.value)">
+                            </div>
+                            <div class="nutri-chat-patient-list">
+                                ${patientItemsHtml}
+                            </div>
+                        </div>
+
+                        <!-- Right Chat Pane -->
+                        <div style="display: flex; flex-direction: column; height: 100%;">
+                            ${activeChatPaneHtml}
+                        </div>
+                    </div>
+                `;
+
+                const msgBox = document.getElementById('chat-messages-container');
+                if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
             }
-            container.scrollTop = container.scrollHeight;
         }
 
         function handleChatKeyPress(event) {
@@ -9750,54 +9999,114 @@
             }
         }
 
-        const chatBotResponses = [
-            "Excelente pergunta! O acompanhamento constante do peso e das medidas é essencial, mas lembre-se de focar em como suas roupas vestem e nos níveis de energia no dia a dia. Isso diz muito mais sobre o seu metabolismo do que a balança!",
-            "Para acelerar o processo de desinflamação, certifique-se de aumentar a ingestão de água (mínimo de 3 litros por dia) e inclua chás digestivos (como gengibre, hortelã ou dente-de-leão) no seu intervalo da tarde.",
-            "As receitas recomendadas que disponibilizamos no portal são baseadas exatamente no que prescrevemos. Caso precise de alguma lista de compras adaptada, verifique a aba de E-books ou fale conosco aqui!"
-        ];
-        
-        let responseIndex = 0;
+        function formatTimeNow() {
+            const now = new Date();
+            const h = now.getHours().toString().padStart(2, '0');
+            const m = now.getMinutes().toString().padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        function formatDateNow() {
+            const now = new Date();
+            const d = now.getDate().toString().padStart(2, '0');
+            const m = (now.getMonth() + 1).toString().padStart(2, '0');
+            const y = now.getFullYear();
+            return `${d}/${m}/${y}`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
         function sendChatMessage() {
             const chatInput = document.getElementById('message-input-text');
+            if (!chatInput) return;
             const messageText = chatInput.value.trim();
             if (messageText === "") return;
 
-            const container = document.getElementById('chat-messages-container');
-            
-            // Add user message to array and render
-            if (activeRole === 'paciente') {
-                chatMessages.paciente.push({ sender: 'sent', text: messageText });
-                renderChatMessages();
-                
-                // Show typing indicator
-                const typingBubble = document.getElementById('typing-bubble');
-                typingBubble.style.display = 'flex';
-                container.scrollTop = container.scrollHeight;
+            const loggedEmail = localStorage.getItem('amazing_franklin_logged_in_email') || sessionStorage.getItem('amazing_franklin_logged_in_email') || "";
 
-                setTimeout(() => {
-                    typingBubble.style.display = 'none';
-                    chatMessages.paciente.push({ sender: 'received', text: chatBotResponses[responseIndex] });
-                    responseIndex = (responseIndex + 1) % chatBotResponses.length;
-                    renderChatMessages();
-                }, 1500);
-            } else {
-                chatMessages.nutri.push({ sender: 'sent', text: messageText });
-                renderChatMessages();
-
-                // Mocking patient reply
-                const typingBubble = document.getElementById('typing-bubble');
-                typingBubble.style.display = 'flex';
-                container.scrollTop = container.scrollHeight;
-
-                setTimeout(() => {
-                    typingBubble.style.display = 'none';
-                    chatMessages.nutri.push({ sender: 'received', text: "Obrigada pelas orientações, Dra. Tati! Vou seguir exatamente assim." });
-                    renderChatMessages();
-                }, 1500);
+            const storedChats = localStorage.getItem('amazing_franklin_patient_chats');
+            if (storedChats) {
+                try { patientChatsStore = JSON.parse(storedChats); } catch(e) {}
             }
-            
-            chatInput.value = "";
+
+            if (activeRole === 'paciente') {
+                let patient = null;
+                if (loggedEmail) {
+                    patient = patientsList.find(p => p.email && p.email.toLowerCase() === loggedEmail.toLowerCase());
+                }
+                if (!patient && currentPatientName) {
+                    patient = patientsList.find(p => p.name && p.name.toLowerCase() === currentPatientName.toLowerCase());
+                }
+                if (!patient && patientData) {
+                    patient = patientData;
+                }
+
+                const targetNutri = getPatientAssignedNutri(patient);
+                const nutriEmail = (patient && patient.nutriEmail) ? patient.nutriEmail : (targetNutri.email || "tati.cardoso@nutricionista.com.br");
+                const patientEmail = (patient && patient.email) ? patient.email : (loggedEmail || "paciente@email.com");
+                const convKey = getChatStorageKey(nutriEmail, patientEmail);
+
+                if (!patientChatsStore[convKey]) {
+                    patientChatsStore[convKey] = [];
+                }
+
+                const newMsg = {
+                    id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                    senderRole: 'paciente',
+                    senderName: patient ? patient.name : 'Paciente',
+                    senderEmail: patientEmail,
+                    text: messageText,
+                    timestamp: Date.now(),
+                    timeFormatted: formatTimeNow(),
+                    dateFormatted: formatDateNow(),
+                    read: false
+                };
+
+                patientChatsStore[convKey].push(newMsg);
+                localStorage.setItem('amazing_franklin_patient_chats', JSON.stringify(patientChatsStore));
+
+                chatInput.value = "";
+                renderChatMessages();
+                showToast("✅ Mensagem enviada para sua nutricionista!", "success");
+
+            } else if (activeRole === 'nutricionista') {
+                if (!activeNutriChatPatientEmail) {
+                    showToast("Por favor, selecione um paciente para responder.", "warning");
+                    return;
+                }
+
+                const convKey = getChatStorageKey(loggedEmail, activeNutriChatPatientEmail);
+                if (!patientChatsStore[convKey]) {
+                    patientChatsStore[convKey] = [];
+                }
+
+                const newMsg = {
+                    id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                    senderRole: 'nutricionista',
+                    senderName: (nutriProfile && nutriProfile.name) ? nutriProfile.name : 'Nutricionista',
+                    senderEmail: loggedEmail,
+                    text: messageText,
+                    timestamp: Date.now(),
+                    timeFormatted: formatTimeNow(),
+                    dateFormatted: formatDateNow(),
+                    read: true
+                };
+
+                patientChatsStore[convKey].push(newMsg);
+                localStorage.setItem('amazing_franklin_patient_chats', JSON.stringify(patientChatsStore));
+
+                chatInput.value = "";
+                renderChatMessages();
+                showToast("✅ Resposta enviada com sucesso!", "success");
+            }
         }
 
         // Dynamic Visbody holographic leader lines

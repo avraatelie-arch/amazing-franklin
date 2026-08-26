@@ -719,11 +719,39 @@ Implementar e corrigir o upload das Fotos de Evolução Visual (Foto de Antes e 
 - [x] Executar `npm test` (Jest): 25/25 testes aprovados.
 - [x] Executar testes E2E Playwright: todos aprovados com 100% de sucesso.
 
+---
 
+# Backlog: Real-Time Bidirectional Patient-Nutritionist Chat & Support Desk (EP-11 Story 1)
 
+This story removes canned bot responses and implements a real, bidirectional communication channel between each patient and their assigned nutritionist:
+1. **No Bot / No Canned Responses**: The patient sends real messages that are routed to their designated nutritionist's inbox.
+2. **Nutritionist Direct Inbox**: The nutritionist views conversations grouped by patient with unread indicators, patient profile badge, and direct reply composer.
+3. **Real-Time Bidirectional Sync**: Messages sent by the nutritionist are immediately visible to the patient, and vice versa, with accurate timestamps and sender attribution.
+4. **Assigned Nutritionist Attribution**: The chat header dynamically displays the assigned nutritionist's name and photo rather than generic hardcoded strings.
 
+## 🛠️ Implementation Checklist
 
+### 1. Product Owner (PO Requirements & Acceptance Criteria)
+- [x] Eliminar completamente respostas automáticas e respostas fakes/bot (`chatBotResponses`) do chat.
+- [x] Cada mensagem enviada pelo paciente deve ser salva e vinculada ao e-mail da nutricionista que o atende (`patient.nutriEmail`).
+- [x] No portal da Nutricionista, a aba `tab-chat` deve permitir selecionar o paciente e responder diretamente com histórico contínuo da conversa.
+- [x] O cabeçalho do chat do paciente deve exibir o nome e foto da sua nutricionista responsável.
+- [x] Persistência segura em `localStorage` sob `amazing_franklin_patient_chats`.
 
+### 2. CSS Styling (UX Specialist)
+- [x] Estilizar a lista de conversas da nutricionista (`.nutri-chat-patient-list`, `.nutri-chat-patient-item.active`, `.chat-unread-badge`).
+- [x] Estilizar os balões de mensagem com avatar do remetente, data/hora formatada e indicação visual de leitura.
+- [x] Garantir layout responsivo no desktop (lista à esquerda + chat à direita) e mobile.
 
+### 3. HTML & JS Logic (Senior Developer)
+- [x] Criar estrutura de dados `amazing_franklin_patient_chats` indexada por ID/Email do paciente e Nutricionista.
+- [x] Atualizar `renderChatMessages()` para renderizar o histórico real do paciente ativo com sua nutricionista.
+- [x] Implementar a visão da nutricionista com seletor de pacientes (`renderNutriChatInbox()`, `selectPatientChat()`).
+- [x] Atualizar `sendChatMessage()` para enviar mensagem real sem disparar respostas automáticas, sincronizando os dois lados em tempo real.
 
-
+### 4. QA Validation Specs (QA Tester)
+- [x] Criar teste Playwright `tests/e2e/test-realtime-patient-nutri-chat.spec.js` validando:
+  - Envio de mensagem pelo paciente Alexandre para a Dra. Tatiane Cardoso sem resposta automática.
+  - Recepção e visualização da mensagem no portal da nutricionista.
+  - Resposta enviada pela nutricionista e recebimento no portal do paciente.
+- [x] Executar `npm test` garantindo zero regressões.
