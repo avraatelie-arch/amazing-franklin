@@ -1,3 +1,78 @@
+# Backlog: Exibição de Consulta na Home, Disparos Multicanal (WhatsApp/E-mail) & Loop Anti-No-Show (EP-16 Story 1)
+
+Esta história implementa a gestão completa do ciclo de vida das consultas agendadas:
+1. **Exibição Universal na Home do Paciente**: Visualização imediata e reativa da próxima consulta (Presencial ou Online) no card `#patient-telemed-card` / `#kpi-val-next-date`.
+2. **Confirmação Bidirecional Instantânea**: Disparo de mensagens automáticas no chat entre paciente e nutricionista confirmando o agendamento.
+3. **Disparos Multicanal (WhatsApp & E-mail)**: Geração de templates com link exclusivo de confirmação rápida (`#confirm-appt=ID`).
+4. **Retorno e Preenchimento Automático (Deep Link / Webhook Sync)**: Ao clicar no link do e-mail/WhatsApp, a plataforma atualiza o status para "Confirmado pelo Paciente" e reflete em tempo real na agenda da nutricionista.
+5. **Loop Anti-No-Show**: Lembretes e banners interativos em D-2 (2 dias antes), D-1 (véspera) e D-0 (dia da consulta).
+
+---
+
+## 🛠️ Implementation Checklist
+
+### 1. Product Owner (PO Requirements & Acceptance Criteria)
+- [x] Definir regras de visibilidade da próxima consulta na Home para modalidades Online e Presencial.
+- [x] Especificar mensagens bidirecionais automáticas de chat para agendamento e confirmação.
+- [x] Definir tokens de confirmação de link para WhatsApp/E-mail e status de confirmação.
+- [x] Definir loop temporal de lembretes D-2, D-1 e D-0.
+- [x] Garantir 100% de aprovação na suíte de testes.
+
+### 2. CSS Styling (UX Specialist)
+- [x] Estilizar badges de status de presença (`.badge-presence-confirmed`, `.badge-presence-pending`, `.badge-presence-today`).
+- [x] Estilizar banners interativos de anti-no-show e cards de e-mail transacional.
+- [x] Assegurar responsividade do card de próxima consulta no grid da Home.
+
+### 3. HTML & JS Logic (Senior Developer)
+- [x] Corrigir `loadPatientDashboard()` para sempre recarregar `appointmentsList` e exibir consultas presenciais e online.
+- [x] Atualizar `confirmBooking()` para despachar mensagens de chat bidirecionais e gerar links de WhatsApp/E-mail.
+- [x] Implementar `checkAndRunAntiNoShowLoop(patient)` para disparos em D-2, D-1 e D-0.
+- [x] Implementar `handleAppointmentDeepLinkConfirmation()` para processar cliques de links de confirmação e atualizar status reativamente.
+- [x] Implementar `confirmPatientAppointmentPresence(apptId)`.
+- [x] Sincronizar com `deploy-vercel/`.
+
+### 4. QA Validation Specs (QA Tester)
+- [x] Criar teste Playwright E2E `tests/e2e/test-booking-multichannel-noshow.spec.js`.
+- [x] Validar que `npm test` passa 25/25 testes.
+- [x] Validar que `npx playwright test` passa 100% dos testes sem falhas.
+
+---
+
+# Backlog: Upload de Foto de Perfil do Paciente & Identidade Visual Autônoma das Nutricionistas (EP-15 Story 1)
+
+Esta história adiciona a capacidade de personalização de fotos para pacientes e nutricionistas:
+1. **Foto de Perfil do Paciente**: Upload de foto própria (PNG/JPG com conversão Base64 e preview instantâneo) no cadastro e modal de perfil.
+2. **Reflexo Multicanal**: Exibição da foto do paciente no menu lateral, chat direto, tabela de pacientes e relatórios da nutricionista.
+3. **Identidade Visual Autônoma da Nutricionista**: Assegurar upload de foto de perfil profissional e logotipo do consultório/clínica com sincronização imediata em receituários, NFS-e e portal do paciente.
+
+---
+
+## 🛠️ Implementation Checklist
+
+### 1. Product Owner (PO Requirements & Acceptance Criteria)
+- [x] Definir fluxo de upload e preview de foto de perfil para o paciente.
+- [x] Garantir que o paciente sem foto mantenha as iniciais elegantes como fallback.
+- [x] Assegurar compatibilidade com o upload de fotos e logos da nutricionista.
+- [x] Garantir 100% de aprovação na suíte de testes com zero regressões.
+
+### 2. CSS Styling (UX Specialist)
+- [x] Estilizar `.avatar-upload-preview`, `.patient-table-avatar-img`, `.chat-avatar-img` em `style.css`.
+- [x] Garantir bordas circulares com `object-fit: cover` e feedback de hover.
+
+### 3. HTML & JS Logic (Senior Developer)
+- [x] Adicionar container de upload com preview `#pat-reg-photo-file` no `#patient-registration-form`.
+- [x] Criar função `handlePatientAvatarUpload(event)`.
+- [x] Persistir `avatar` em `patientData`, `patientsList` e `localStorage`.
+- [x] Atualizar `setupRolePortal()`, `renderPatientsTable()` e `renderChatMessages()` para renderizar a imagem do paciente.
+- [x] Sincronizar arquivos para `deploy-vercel/`.
+
+### 4. QA Validation Specs (QA Tester)
+- [x] Criar teste Playwright E2E `tests/e2e/test-patient-avatar-upload.spec.js`.
+- [x] Validar que `npm test` passa 25/25 testes.
+- [x] Validar que `npx playwright test` passa 100% dos testes sem falhas.
+
+---
+
 # Backlog: Notificação Visual de Mensagens Não Lidas no Menu Lateral (EP-13 Story 1)
 
 Esta história implementa a notificação visual em tempo real ("balãozinho" / notification badge) nos menus laterais:
