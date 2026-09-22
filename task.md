@@ -1,3 +1,71 @@
+# Backlog: Notificação Visual de Mensagens Não Lidas no Menu Lateral (EP-13 Story 1)
+
+Esta história implementa a notificação visual em tempo real ("balãozinho" / notification badge) nos menus laterais:
+1. **Menu do Paciente**: No item "Suporte & Dúvidas", exibe balãozinho (`#badge-patient-chat`) com a contagem de mensagens não lidas enviadas pela nutricionista.
+2. **Menu da Nutricionista**: No item "Responder Dúvidas", exibe balãozinho (`#badge-nutri-chat`) com a contagem de mensagens não lidas enviadas pelos pacientes.
+3. **Limpeza Automática**: Ao acessar a aba de chat correspondente, as mensagens são marcadas como lidas e o balãozinho desaparece.
+4. **Sincronização em Tempo Real**: Atualização reativa entre abas via `storage` event.
+
+---
+
+## 🛠️ Implementation Checklist
+
+### 1. Product Owner (PO Requirements & Acceptance Criteria)
+- [x] Definir critérios de contagem de mensagens não lidas por perfil (paciente e nutricionista).
+- [x] Garantir que o balãozinho exiba contagem numérica e desapareça ao abrir a conversa.
+- [x] Garantir 100% de aprovação na suíte de testes com zero regressões.
+
+### 2. CSS Styling (UX Specialist)
+- [x] Criar classe `.nav-badge` em `style.css` utilizando a variável `--terracotta`, alinhamento `margin-left: auto` e micro-animação `@keyframes pulseBadge`.
+- [x] Adaptar contraste do badge quando o `.nav-item` estiver ativo (`.nav-item.active .nav-badge`).
+
+### 3. HTML & JS Logic (Senior Developer)
+- [x] Adicionar `#badge-patient-chat` e `#badge-nutri-chat` nos itens de menu em `index.html`.
+- [x] Implementar `updateChatUnreadBadges()` para calcular e exibir a contagem de mensagens não lidas.
+- [x] Integrar chamada de atualização em `sendChatMessage()`, `setupRolePortal()` e listener de `storage`.
+- [x] Marcar mensagens como lidas e esconder o badge ao abrir `tab-chat` em `switchTab()` e `renderChatMessages()`.
+- [x] Sincronizar arquivos para `deploy-vercel/`.
+
+### 4. QA Validation Specs (QA Tester)
+- [x] Criar teste Playwright E2E `tests/e2e/test-chat-unread-badge.spec.js`.
+- [x] Validar que `npm test` passa 25/25 testes.
+- [x] Validar que `npx playwright test` passa 100% dos testes sem falhas (62/62 E2E).
+
+---
+
+# Backlog: Estabilização de Seeds, Identidade Multi-Tenant e Conformidade da Suíte E2E (EP-12 Story 1)
+
+Esta história garante que a plataforma funcione de forma estável tanto no fluxo limpo de primeiro acesso (Empty State de novos cadastros reais) quanto na coexistência com contas e sementes de demonstração para testes automatizados e homologação em ambiente real:
+1. **Hidratação Inteligente de Contas Padrão**: Assegurar que as contas de demonstração essenciais (`farmacia@parceira.com`, `tati@cardoso.com`, etc.) e produtos da vitrine sejam hidratados quando o storage for limpo ou quando o usuário correspondente realizar login.
+2. **Identidade Dinâmica do Prestador na NFS-e**: Vincular os dados do cabeçalho da NFS-e ao perfil da nutricionista ativa (`nutriProfile` / `nutriAccounts`) respeitando o nome real (`Dra. Tatiane Cardoso` ou do tenant logado).
+3. **Agendamento de Demonstração para Telemedicina**: Garantir que a lista de agendamentos (`appointmentsList`) mantenha a consulta online da Dra. Tati Cardoso com botão "Iniciar" para validação do Jitsi Meet.
+4. **Conformidade do Atributo Alt da Marca**: Garantir que as tags `img.auth-logo` atendam a conformidade de acessibilidade e segurança de marca (`alt="Logo Tati Cardoso"`).
+
+---
+
+## 🛠️ Implementation Checklist
+
+### 1. Product Owner (PO Requirements & Acceptance Criteria)
+- [x] Garantir compatibilidade entre Empty State para novos pacientes e sementes essenciais de farmácia e produtos para testes.
+- [x] Garantir que o nome da nutricionista logada seja refletido na emissão de NFS-e, laudos e cabeçalhos.
+- [x] Assegurar a presença de agendamento online ativo para teste de telemedicina Jitsi.
+- [x] 100% da suíte de testes (25 Jest + 61 Playwright) aprovada com zero falhas.
+
+### 2. HTML & JS Logic (Senior Developer)
+- [x] Atualizar o reset e inicialização em `index.html` para hidratar contas essenciais de fornecedores e produtos padrão.
+- [x] Atualizar `openNfseModal()` e `applySubdomainBranding()` para utilizar o nome correto da nutricionista ativa.
+- [x] Garantir que `appointmentsList` inicialize com consulta ativa para testes de telemedicina.
+- [x] Ajustar `alt` do logo para atender aos testes de isolamento multi-tenant.
+
+### 3. CSS Styling (UX Specialist)
+- [x] Validar conformidade de classes e variáveis de cor institucionais no `style.css`.
+
+### 4. QA Validation Specs (QA Tester)
+- [x] Executar `npm test` garantindo 25/25 testes unitários/API aprovados.
+- [x] Executar `npm run test:e2e` garantindo 61/61 testes Playwright aprovados com zero falhas.
+
+---
+
 # Backlog: Patient Empty State, Uber-Style Rating & Nutritionist Ranking Marketplace (EP-09 Story 1)
 
 This story implements:

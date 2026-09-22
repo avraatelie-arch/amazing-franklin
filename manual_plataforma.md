@@ -36,19 +36,25 @@ A plataforma possui preenchimento automático de endereço usando a API pública
      - As seções incluem: *Título da Capa, Visão Geral, Estratégia, Refeições, Suplementação e Próximos Passos*.
      - Os campos permanecem editáveis para ajustes personalizados antes de salvar.
    - **Prescrição de Fórmulas**: Envio de fórmulas diretamente para cotação no marketplace de farmácias credenciadas.
-3. **Meu Cadastro**: Edição de dados do consultório, especialidade, registro CRN e endereço profissional.
+3. **Central de Dúvidas & Chat com Pacientes ("Responder Dúvidas")**:
+   - Painel integrado para comunicação bidirecional com os pacientes vinculados.
+   - **Notificação Visual (Balãozinho Terracota)**: Exibe badge pulsante no menu lateral indicando o número exato de mensagens não lidas enviadas pelos pacientes. O badge é limpo automaticamente ao abrir a conversa.
+4. **Meu Cadastro**: Edição de dados do consultório, especialidade, registro CRN e endereço profissional.
 
 ### B. Paciente
 1. **Painel de Evolução**:
    - Visualização do prontuário, progresso gráfico de peso e gordura.
    - Acesso ao **Programa de Evolução Nutricional** em formato de slides premium animados e interativos.
    - Suporte a **impressão otimizada** (sem cabeçalhos do navegador, barra de navegação ou botões de controle) para geração de PDFs limpos.
-2. **Acompanhamento de Pedidos & Fórmulas**:
+2. **Suporte & Dúvidas com a Nutricionista**:
+   - Canal de chat direto para esclarecer dúvidas clínicas e orientações nutricionais.
+   - **Notificação Visual (Balãozinho Terracota)**: Exibe badge com contagem no menu lateral "Suporte & Dúvidas" quando a nutricionista responde ou envia nova mensagem. Ao abrir a aba, as mensagens são marcadas como lidas e o balãozinho desaparece.
+3. **Acompanhamento de Pedidos & Fórmulas**:
    - Comparação de preços e prazos de cotações recebidas de farmácias.
    - Pagamento integrado simulado com Stripe.
    - Acompanhamento do status de entrega com link de rastreamento clicável da transportadora selecionada pela farmácia.
-3. **Suporte Direto (Chamados)**: Canal de chat direto com a farmácia selecionada para tirar dúvidas sobre a fórmula ou entrega do pedido.
-4. **Meu Cadastro**: Edição de dados pessoais, telefone e endereço de entrega.
+4. **Suporte Direto da Farmácia (Chamados)**: Canal de chat direto com a farmácia selecionada para tirar dúvidas sobre a fórmula ou entrega do pedido.
+5. **Meu Cadastro**: Edição de dados pessoais, telefone e endereço de entrega.
 
 ### C. Fornecedor (Farmácia de Manipulação)
 1. **Orçamentos**: Envio de propostas de preço, valor do frete e prazo de entrega para as fórmulas prescritas pelos nutricionistas.

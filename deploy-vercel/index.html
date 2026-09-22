@@ -490,7 +490,8 @@
                     <li>
                         <a class="nav-item" onclick="switchTab('tab-chat', this)" data-i18n="menuSupport">
                             <svg viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            Suporte & Dúvidas
+                            <span>Suporte & Dúvidas</span>
+                            <span class="nav-badge" id="badge-patient-chat" style="display: none;">0</span>
                         </a>
                     </li>
                     <li>
@@ -541,7 +542,8 @@
                     <li>
                         <a class="nav-item" onclick="switchTab('tab-chat', this)" data-i18n="menuNutriChat">
                             <svg viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            Responder Dúvidas
+                            <span>Responder Dúvidas</span>
+                            <span class="nav-badge" id="badge-nutri-chat" style="display: none;">0</span>
                         </a>
                     </li>
                     <li>
@@ -6256,6 +6258,7 @@
             renderEbooksTab();
             renderPatientExamsList();
             updateSaaSState();
+            updateChatUnreadBadges();
         }
 
         // Dynamically load updated patient records to dashboard
@@ -9772,6 +9775,19 @@
                 const convKey = getChatStorageKey(nutriEmail, patientEmail);
                 const messages = patientChatsStore[convKey] || [];
 
+                // Mark messages from nutritionist as read for this patient
+                let unreadChanged = false;
+                messages.forEach(m => {
+                    if (m.senderRole === 'nutricionista' && !m.read) {
+                        m.read = true;
+                        unreadChanged = true;
+                    }
+                });
+                if (unreadChanged) {
+                    localStorage.setItem('amazing_franklin_patient_chats', JSON.stringify(patientChatsStore));
+                    updateChatUnreadBadges();
+                }
+
                 const nutriInitials = targetNutri.name ? targetNutri.name.split(' ').map(w => w.charAt(0)).slice(0, 2).join('').toUpperCase() : "NC";
                 const specialty = targetNutri.specialty || "Nutrição Clínica & Funcional";
 
@@ -9898,6 +9914,20 @@
                 if (selectedPatient) {
                     const convKey = getChatStorageKey(loggedEmail, selectedPatient.email);
                     const messages = patientChatsStore[convKey] || [];
+
+                    // Mark messages from this patient as read for nutritionist
+                    let unreadChanged = false;
+                    messages.forEach(m => {
+                        if (m.senderRole === 'paciente' && !m.read) {
+                            m.read = true;
+                            unreadChanged = true;
+                        }
+                    });
+                    if (unreadChanged) {
+                        localStorage.setItem('amazing_franklin_patient_chats', JSON.stringify(patientChatsStore));
+                        updateChatUnreadBadges();
+                    }
+
                     const pInitials = selectedPatient.name ? selectedPatient.name.split(' ').map(w => w.charAt(0)).slice(0, 2).join('').toUpperCase() : "P";
 
                     let threadHtml = "";
@@ -10097,17 +10127,73 @@
                     timestamp: Date.now(),
                     timeFormatted: formatTimeNow(),
                     dateFormatted: formatDateNow(),
-                    read: true
+                    read: false
                 };
 
                 patientChatsStore[convKey].push(newMsg);
                 localStorage.setItem('amazing_franklin_patient_chats', JSON.stringify(patientChatsStore));
+                updateChatUnreadBadges();
 
                 chatInput.value = "";
                 renderChatMessages();
                 showToast("✅ Resposta enviada com sucesso!", "success");
             }
         }
+
+        function updateChatUnreadBadges() {
+            const storedChats = localStorage.getItem('amazing_franklin_patient_chats');
+            let chatsStore = {};
+            if (storedChats) {
+                try { chatsStore = JSON.parse(storedChats); } catch(e) {}
+            }
+            const loggedEmail = (localStorage.getItem('amazing_franklin_logged_in_email') || sessionStorage.getItem('amazing_franklin_logged_in_email') || "").toLowerCase();
+
+            const patientBadge = document.getElementById('badge-patient-chat');
+            const nutriBadge = document.getElementById('badge-nutri-chat');
+
+            if (activeRole === 'paciente') {
+                if (patientBadge) {
+                    let unreadTotal = 0;
+                    Object.keys(chatsStore).forEach(k => {
+                        if (!loggedEmail || k.toLowerCase().includes(loggedEmail)) {
+                            const msgs = chatsStore[k] || [];
+                            unreadTotal += msgs.filter(m => m.senderRole === 'nutricionista' && !m.read).length;
+                        }
+                    });
+                    if (unreadTotal > 0) {
+                        patientBadge.innerText = String(unreadTotal);
+                        patientBadge.style.display = 'inline-flex';
+                    } else {
+                        patientBadge.style.display = 'none';
+                    }
+                }
+            } else if (activeRole === 'nutricionista') {
+                if (nutriBadge) {
+                    let unreadTotal = 0;
+                    Object.keys(chatsStore).forEach(k => {
+                        if (!loggedEmail || k.toLowerCase().includes(loggedEmail) || k.toLowerCase().includes('tati') || k.toLowerCase().includes('cardoso')) {
+                            const msgs = chatsStore[k] || [];
+                            unreadTotal += msgs.filter(m => m.senderRole === 'paciente' && !m.read).length;
+                        }
+                    });
+                    if (unreadTotal > 0) {
+                        nutriBadge.innerText = String(unreadTotal);
+                        nutriBadge.style.display = 'inline-flex';
+                    } else {
+                        nutriBadge.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'amazing_franklin_patient_chats') {
+                updateChatUnreadBadges();
+                if (document.getElementById('tab-chat') && document.getElementById('tab-chat').classList.contains('active')) {
+                    renderChatMessages();
+                }
+            }
+        });
 
         // Dynamic Visbody holographic leader lines
         function drawHoloLines() {
