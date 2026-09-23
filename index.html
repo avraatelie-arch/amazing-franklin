@@ -702,6 +702,9 @@
                 <!-- Announcements Area -->
                 <div id="patient-announcements-area" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;"></div>
 
+                <!-- Patient Next Scheduled Appointment Banner (EP-18 Story 1) -->
+                <div id="patient-home-next-appointment-banner" style="display: none; margin-bottom: 1.5rem;"></div>
+
                 <!-- Alert Banner for Profile Address Completion in Patient Dashboard -->
                 <div id="patient-dash-address-alert" class="trial-banner" style="display: none; background: linear-gradient(90deg, var(--bronze-gold) 0%, var(--terracotta) 100%); color: #FFF; padding: 0.75rem 1.5rem; font-size: 0.9rem; font-weight: 600; justify-content: space-between; align-items: center; border-radius: var(--radius-md); margin-bottom: 1.5rem; box-shadow: var(--shadow-sm); animation: authFadeIn 0.3s ease-out; cursor: pointer;" onclick="openPatientProfileRegistrationModal()">
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -6782,15 +6785,80 @@
             const dashNextConsult = document.getElementById('dash-patient-next-consult');
             const dashActiveDiet = document.getElementById('dash-patient-active-diet');
             
+            // Robust lookup of patient's active appointments
+            const pEmail = (patient.email || loggedEmail || "").trim().toLowerCase();
+            const pName = (patient.name || storedPatName || "").trim().toLowerCase();
+
             const activePatientAppts = appointmentsList.filter(a => {
                 if (!a) return false;
-                const matchName = a.patientName && patient && a.patientName.toLowerCase() === (patient.name || "").toLowerCase();
-                const matchEmail = a.patientEmail && patient && patient.email && a.patientEmail.toLowerCase() === patient.email.toLowerCase();
-                return matchName || matchEmail;
+                const aStatus = (a.status || '').toLowerCase();
+                if (aStatus.includes('cancelad')) return false;
+
+                const aEmail = (a.patientEmail || '').trim().toLowerCase();
+                const aName = (a.patientName || '').trim().toLowerCase();
+
+                const matchEmail = (pEmail && aEmail === pEmail);
+                const matchName = (pName && (aName === pName || aName.includes(pName) || pName.includes(aName)));
+                const sessionMatch = (!pEmail && !aEmail) || (!pName && !aName);
+
+                return matchEmail || matchName || sessionMatch;
             });
             const latestAppt = activePatientAppts.length > 0 ? activePatientAppts[0] : null;
             const telemedCard = document.getElementById('patient-telemed-card');
             
+            // Render Hero Banner on Patient Home
+            const homeApptBanner = document.getElementById('patient-home-next-appointment-banner');
+            if (homeApptBanner) {
+                if (latestAppt) {
+                    const isConfirmed = latestAppt.presenceConfirmed || (latestAppt.status && latestAppt.status.includes('Confirmado pelo Paciente'));
+                    const isOnline = (latestAppt.type === 'Online');
+                    const nutriName = latestAppt.nutriName || (nutriProfile ? nutriProfile.name : 'Dra. Tatiane Cardoso');
+
+                    homeApptBanner.style.display = 'block';
+                    homeApptBanner.innerHTML = `
+                        <div class="patient-home-appointment-banner">
+                            <div class="banner-info">
+                                <div class="banner-icon">
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
+                                        <strong style="color: var(--primary-slate); font-size: 1.05rem;">Sua Próxima Consulta Agendada</strong>
+                                        <span class="badge-status ${isConfirmed ? 'active' : 'mentoria'}" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">
+                                            ${isConfirmed ? '✅ Presença Confirmada' : '⏳ Aguardando Confirmação'}
+                                        </span>
+                                    </div>
+                                    <p style="margin: 0; color: var(--primary-olive); font-weight: 700; font-size: 0.95rem;">
+                                        📅 ${latestAppt.date} às ${latestAppt.time} • ${isOnline ? '💻 Telemedicina ao Vivo' : '🏥 Consultório Presencial'}
+                                    </p>
+                                    <span style="font-size: 0.8rem; color: var(--text-light);">Nutricionista: ${nutriName}</span>
+                                </div>
+                            </div>
+                            <div class="banner-actions">
+                                ${isOnline ? `
+                                <button type="button" class="btn-home-appt telemed" onclick="startTelemedCall('${patient.name}', '${latestAppt.id}', 'paciente')">
+                                    🎥 Entrar na Teleconsulta
+                                </button>
+                                ` : `
+                                <button type="button" class="btn-home-appt telemed" style="background: var(--primary-olive);" onclick="goToTab('tab-evolution')">
+                                    📍 Ver Localização
+                                </button>
+                                `}
+                                <button type="button" class="btn-home-appt reschedule" onclick="openPatientRescheduleFlow('${latestAppt.id}')">
+                                    🔄 Reagendar
+                                </button>
+                                <button type="button" class="btn-home-appt cancel" onclick="cancelPatientAppointment('${latestAppt.id}')">
+                                    ✕ Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    homeApptBanner.style.display = 'none';
+                    homeApptBanner.innerHTML = '';
+                }
+            }
+
             if (latestAppt) {
                 const isConfirmed = latestAppt.presenceConfirmed || (latestAppt.status && latestAppt.status.includes('Confirmado pelo Paciente'));
                 const statusBadgeStr = isConfirmed ? ' [Presença Confirmada]' : ' [Aguardando Confirmação]';
@@ -6805,7 +6873,7 @@
                     dashNextConsult.innerText = "Nenhuma consulta agendada";
                 }
                 if (telemedCard) {
-                    telemedCard.style.display = 'none';
+                    telemedCard.style.display = 'flex';
                 }
             }
             
@@ -6891,6 +6959,8 @@
             if (kpiTargetPeso) kpiTargetPeso.innerText = `Meta: ${patient.objective || 'Prevenção & Bem-estar'}`;
             if (kpiStatus) kpiStatus.innerText = patient.status || 'Ativo (Consultório)';
 
+            const actionContainer = telemedCard ? telemedCard.querySelector('.patient-kpi-action') : null;
+
             if (latestAppt) {
                 const dateParts = latestAppt.date ? latestAppt.date.split(' de ') : ['Hoje'];
                 const dayMonthStr = dateParts.length >= 2 ? `${dateParts[0]} de ${dateParts[1]}` : latestAppt.date;
@@ -6908,27 +6978,38 @@
                     </div>`;
                 }
 
-                const telemedBtn = document.querySelector('#patient-telemed-card button');
-                if (telemedBtn) {
-                    if (latestAppt.type === 'Online') {
-                        telemedBtn.innerText = "🎥 Teleconsulta";
-                        telemedBtn.style.background = "var(--primary-olive)";
-                        telemedBtn.onclick = function(e) {
-                            e.stopPropagation();
-                            startTelemedCall(patient.name, latestAppt.id, 'paciente');
-                        };
-                    } else {
-                        telemedBtn.innerText = "📍 Consultório";
-                        telemedBtn.style.background = "var(--bronze-gold)";
-                        telemedBtn.onclick = function(e) {
-                            e.stopPropagation();
-                            showPresencialAlert(patient.name);
-                        };
-                    }
+                if (actionContainer) {
+                    const isOnline = (latestAppt.type === 'Online');
+                    actionContainer.innerHTML = `
+                        <div style="display: flex; gap: 0.35rem; align-items: center; justify-content: space-between; width: 100%;">
+                            ${isOnline ? `
+                            <button type="button" class="btn-action btn-action-primary" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; background: #2563eb;" onclick="startTelemedCall('${patient.name}', '${latestAppt.id}', 'paciente'); event.stopPropagation();">
+                                🎥 Entrar
+                            </button>
+                            ` : `
+                            <button type="button" class="btn-action btn-action-primary" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; background: var(--primary-olive);" onclick="goToTab('tab-evolution'); event.stopPropagation();">
+                                📍 Local
+                            </button>
+                            `}
+                            <button type="button" class="btn-action btn-action-secondary" style="font-size: 0.72rem; padding: 0.25rem 0.45rem;" onclick="openPatientRescheduleFlow('${latestAppt.id}'); event.stopPropagation();">
+                                Reagendar
+                            </button>
+                            <button type="button" class="btn-action btn-action-secondary" style="font-size: 0.72rem; padding: 0.25rem 0.45rem; color: var(--terracotta); border-color: var(--terracotta);" onclick="cancelPatientAppointment('${latestAppt.id}'); event.stopPropagation();" title="Cancelar / Desmarcar consulta">
+                                ✕
+                            </button>
+                        </div>
+                    `;
                 }
             } else {
                 if (kpiNextDate) kpiNextDate.innerText = "Sem agendamento";
-                if (kpiNextTime) kpiNextTime.innerHTML = `<span>Horário livre</span>`;
+                if (kpiNextTime) kpiNextTime.innerHTML = `<span>Nenhuma consulta marcada</span>`;
+                if (actionContainer) {
+                    actionContainer.innerHTML = `
+                        <button type="button" class="btn-action btn-action-primary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; width: 100%; background: var(--primary-olive);" onclick="goToTab('tab-booking'); event.stopPropagation();">
+                            + Agendar Consulta
+                        </button>
+                    `;
+                }
             }
 
             // Load interactive charts
@@ -12489,9 +12570,10 @@
             }
             const patientName = patient ? patient.name : (currentPatientName || "Frederico Augusto Moreira da Encarnação");
 
-            // Single active booking validation for patient
+            // Single active booking validation for patient (with Reschedule bypass)
             const activePending = appointmentsList.find(a => {
                 if (!a || a.status === 'Cancelado' || a.status === 'cancelled') return false;
+                if (patientReschedulingApptId && a.id === patientReschedulingApptId) return false;
                 const s = (a.status || '').toLowerCase();
                 const isOngoing = !s.includes('realizado') && !s.includes('atendido') && !s.includes('concluído') && !s.includes('cancelado');
                 const matchesPat = (a.patientName && a.patientName.trim().toLowerCase() === patientName.trim().toLowerCase()) ||
@@ -12499,8 +12581,12 @@
                 return isOngoing && matchesPat;
             });
 
-            if (activePending) {
-                showToast(`⚠️ Você já possui uma consulta agendada para ${activePending.date} às ${activePending.time}. Aguarde o atendimento para agendar o retorno ou reagende a consulta atual.`, "warning", 7000);
+            if (patientReschedulingApptId) {
+                // Replacing existing rescheduled appointment
+                appointmentsList = appointmentsList.filter(a => a.id !== patientReschedulingApptId);
+                patientReschedulingApptId = null;
+            } else if (activePending) {
+                showToast(`⚠️ Você já possui uma consulta agendada para ${activePending.date} às ${activePending.time}. Aguarde o atendimento para agendar o retorno ou clique em "Reagendar" na Página Inicial.`, "warning", 7000);
                 renderPatientBookingTab();
                 return;
             }
@@ -13137,6 +13223,20 @@
 
         // TELEMEDICINE & SCHEDULING LOGIC
         let editingAppointmentId = null;
+        let patientReschedulingApptId = null;
+
+        function openPatientRescheduleFlow(apptId) {
+            const stored = localStorage.getItem('amazing_franklin_appointments_list');
+            if (stored) {
+                try { appointmentsList = JSON.parse(stored); } catch(e) {}
+            }
+            const appt = appointmentsList.find(a => a.id === apptId);
+            if (!appt) return;
+
+            patientReschedulingApptId = apptId;
+            goToTab('tab-booking');
+            showToast(`🔄 Modo de Reagendamento: Selecione a nova data e horário abaixo para transferir sua consulta de ${appt.date} às ${appt.time}.`, "info", 7000);
+        }
 
         function populateSchedPatientSelect() {
             const selectEl = document.getElementById('sched-patient-select');

@@ -1,3 +1,41 @@
+# Backlog: Exibição Proeminente da Consulta na Home do Paciente, Ações de Reagendamento & Cancelamento com 1 Clique (EP-18 Story 1)
+
+Esta história implementa a gestão completa da consulta na tela inicial (Home) do Paciente:
+1. **Exibição Proeminente na Home**: Widget dedicado e banner no topo da Home (`#patient-home-next-appointment-banner`) exibindo data, hora, nutricionista, modalidade e status de presença.
+2. **KPI 4 Sempre Visível**: O card de Próxima Consulta no grid 4-KPI (`#patient-telemed-card`) permanece sempre integrado ao layout, com ações diretas e estado vazio elegante quando não houver agendamento.
+3. **Ações de Reagendamento e Cancelamento com 1 Clique**:
+   - Botão **`🔄 Reagendar`**: Abre fluxo de reagendamento direto para selecionar nova data/horário sem conflito com a trava de 1 consulta.
+   - Botão **`❌ Cancelar / Desmarcar`**: Executa cancelamento com confirmação, atualiza a Home em tempo real e libera a agenda da nutricionista imediatamente.
+4. **Resolução Robusta de Identificação do Paciente**: Busca e correspondência resiliente de agendamentos por e-mail, nome ou sessão.
+
+---
+
+## 🛠️ Implementation Checklist
+
+### 1. Product Owner (PO Requirements & Acceptance Criteria)
+- [x] Definir layout e elementos do banner de próxima consulta na Home do paciente.
+- [x] Especificar ações de teleconsulta, reagendamento e cancelamento para o paciente.
+- [x] Garantir 100% de aprovação na suíte de testes unitários e E2E.
+
+### 2. CSS Styling (UX Specialist)
+- [x] Estilizar `#patient-home-next-appointment-banner` com `--primary-olive`, sombras suaves e botões de ação responsivos.
+- [x] Aprimorar estilização dos botões de ação no card KPI 4 (`#patient-telemed-card`).
+- [x] Sincronizar com `deploy-vercel/style.css`.
+
+### 3. HTML & JS Logic (Senior Developer)
+- [x] Adicionar container `#patient-home-next-appointment-banner` em `#tab-home`.
+- [x] Atualizar `loadPatientDashboard()` com correspondência robusta de agendamentos e renderização dos botões de Reagendar, Cancelar e Entrar.
+- [x] Implementar fluxo de reagendamento direto do paciente `openPatientRescheduleFlow(apptId)`.
+- [x] Assegurar que `#patient-telemed-card` exiba estado ativo e vazio com botão `+ Agendar`.
+- [x] Sincronizar com `deploy-vercel/index.html`.
+
+### 4. QA Validation Specs (QA Tester)
+- [x] Criar teste Playwright E2E `tests/e2e/test-patient-home-appointment-actions.spec.js`.
+- [x] Validar que `npm.cmd test` passa 25/25 testes.
+- [x] Validar que `npx.cmd playwright test` passa 100% sem regressões.
+
+---
+
 # Backlog: Calendário Dinâmico em Tempo Real, Bloqueio de Datas Passadas & Preservação do Histórico (EP-17 Story 1)
 
 Esta história ajusta a sincronização temporal dos calendários e agendas da plataforma:
