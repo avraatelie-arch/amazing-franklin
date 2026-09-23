@@ -11938,9 +11938,10 @@
         // ============================================================================
         // DYNAMIC YEAR-ROUND BOOKING CALENDAR & REAL-TIME SLOT SUSPENSION ENGINE
         // ============================================================================
-        let bookingSelectedYear = 2026;
-        let bookingSelectedMonth = 7; // Agosto (0-indexed: 7 = August)
-        let bookingSelectedDay = 21;
+        const _nowBookingInit = new Date();
+        let bookingSelectedYear = _nowBookingInit.getFullYear();
+        let bookingSelectedMonth = _nowBookingInit.getMonth(); // Current month (0-indexed)
+        let bookingSelectedDay = _nowBookingInit.getDate();
         let bookingSelectedTime = "14:00";
         let bookingSelectedType = "Online";
 
@@ -12044,24 +12045,73 @@
         }
 
         function changeBookingMonth(delta) {
-            bookingSelectedMonth += delta;
-            if (bookingSelectedMonth > 11) {
-                bookingSelectedMonth = 0;
-                bookingSelectedYear++;
-            } else if (bookingSelectedMonth < 0) {
-                bookingSelectedMonth = 11;
-                bookingSelectedYear--;
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+
+            let targetMonth = bookingSelectedMonth + delta;
+            let targetYear = bookingSelectedYear;
+            if (targetMonth > 11) {
+                targetMonth = 0;
+                targetYear++;
+            } else if (targetMonth < 0) {
+                targetMonth = 11;
+                targetYear--;
+            }
+
+            // Lock: prevent navigating to past months
+            if (targetYear < currentYear || (targetYear === currentYear && targetMonth < currentMonth)) {
+                showToast("⚠️ Não é possível retroceder para meses anteriores ao atual.", "warning");
+                return;
+            }
+
+            bookingSelectedMonth = targetMonth;
+            bookingSelectedYear = targetYear;
+
+            if (bookingSelectedYear === currentYear && bookingSelectedMonth === currentMonth) {
+                if (bookingSelectedDay < today.getDate()) {
+                    bookingSelectedDay = today.getDate();
+                }
+            } else {
+                bookingSelectedDay = 1;
             }
             renderPatientBookingTab();
         }
 
         function setBookingYearMonth(monthIdx, yearNum) {
-            bookingSelectedMonth = parseInt(monthIdx, 10);
-            bookingSelectedYear = parseInt(yearNum, 10);
+            let m = parseInt(monthIdx, 10);
+            let y = parseInt(yearNum, 10);
+            if (typeof monthIdx === 'string' && monthIdx.includes('_')) {
+                const parts = monthIdx.split('_');
+                m = parseInt(parts[0], 10);
+                y = parseInt(parts[1], 10);
+            }
+            const today = new Date();
+            if (y < today.getFullYear() || (y === today.getFullYear() && m < today.getMonth())) {
+                showToast("⚠️ Não é possível selecionar um mês anterior ao atual.", "warning");
+                return;
+            }
+            bookingSelectedMonth = m;
+            bookingSelectedYear = y || bookingSelectedYear;
+
+            if (bookingSelectedYear === today.getFullYear() && bookingSelectedMonth === today.getMonth()) {
+                if (bookingSelectedDay < today.getDate()) {
+                    bookingSelectedDay = today.getDate();
+                }
+            } else {
+                bookingSelectedDay = 1;
+            }
             renderPatientBookingTab();
         }
 
         function selectBookingDay(day) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const targetDate = new Date(bookingSelectedYear, bookingSelectedMonth, day);
+            if (targetDate < today) {
+                showToast("⚠️ Não é possível selecionar uma data passada para agendamento.", "warning");
+                return;
+            }
             bookingSelectedDay = day;
             renderPatientBookingTab();
         }
@@ -12162,11 +12212,29 @@
             const selectedWeekDayName = weekDayNamesPT[selectedDateObj.getDay()];
             const selectedMonthName = monthNamesPT[bookingSelectedMonth];
 
-            // Build month options for selector
+            const todayCal = new Date();
+            todayCal.setHours(0, 0, 0, 0);
+            const currentYear = todayCal.getFullYear();
+            const currentMonth = todayCal.getMonth();
+            const currentDay = todayCal.getDate();
+
+            // Safety check: ensure booking selected date is not in past
+            if (bookingSelectedYear < currentYear || (bookingSelectedYear === currentYear && bookingSelectedMonth < currentMonth)) {
+                bookingSelectedYear = currentYear;
+                bookingSelectedMonth = currentMonth;
+                bookingSelectedDay = currentDay;
+            } else if (bookingSelectedYear === currentYear && bookingSelectedMonth === currentMonth && bookingSelectedDay < currentDay) {
+                bookingSelectedDay = currentDay;
+            }
+
+            // Build month options for selector starting from current month for 12 months ahead
             let monthOptionsHTML = "";
-            for (let m = 0; m < 12; m++) {
-                const isSel = (m === bookingSelectedMonth) ? "selected" : "";
-                monthOptionsHTML += `<option value="${m}" ${isSel}>${monthNamesPT[m]} ${bookingSelectedYear}</option>`;
+            for (let i = 0; i < 12; i++) {
+                const optDate = new Date(currentYear, currentMonth + i, 1);
+                const m = optDate.getMonth();
+                const y = optDate.getFullYear();
+                const isSel = (m === bookingSelectedMonth && y === bookingSelectedYear) ? "selected" : "";
+                monthOptionsHTML += `<option value="${m}_${y}" ${isSel}>${monthNamesPT[m]} ${y}</option>`;
             }
 
             // Build days HTML
@@ -12175,10 +12243,19 @@
             for (let i = 0; i < firstDayOfWeek; i++) {
                 daysHTML += `<div class="calendar-day disabled" style="opacity: 0.3;">-</div>`;
             }
-            // Active days
+            // Active days with past lock
             for (let d = 1; d <= daysInMonth; d++) {
+                const dayDate = new Date(bookingSelectedYear, bookingSelectedMonth, d);
+                dayDate.setHours(0, 0, 0, 0);
+                const isPast = dayDate < todayCal;
+                const isToday = (d === currentDay && bookingSelectedMonth === currentMonth && bookingSelectedYear === currentYear);
                 const isActive = (d === bookingSelectedDay) ? "active" : "";
-                daysHTML += `<div class="calendar-day ${isActive}" onclick="selectBookingDay(${d})" style="cursor: pointer; font-weight: ${d === bookingSelectedDay ? '700' : '500'};">${d}</div>`;
+
+                if (isPast) {
+                    daysHTML += `<div class="calendar-day disabled past" title="Data passada não disponível para agendamento">${d}</div>`;
+                } else {
+                    daysHTML += `<div class="calendar-day ${isActive} ${isToday ? 'today-highlight' : ''}" onclick="selectBookingDay(${d})" title="${isToday ? 'Hoje' : ''}" style="cursor: pointer; font-weight: ${d === bookingSelectedDay ? '700' : '500'};">${d}</div>`;
+                }
             }
 
             const availableTimes = ["08:00", "09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
@@ -12799,9 +12876,12 @@
         }
 
         function getMondayOfCurrentWeek(weekOffset) {
-            const baseDate = new Date(2026, 5, 22); // Target anchor: June 22, 2026 (Monday)
-            const monday = new Date(baseDate);
-            monday.setDate(monday.getDate() + (weekOffset * 7));
+            const today = new Date();
+            const day = today.getDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+            const diffToMonday = (day === 0 ? -6 : 1 - day);
+            const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diffToMonday);
+            monday.setHours(0, 0, 0, 0);
+            monday.setDate(monday.getDate() + ((weekOffset || 0) * 7));
             return monday;
         }
 
@@ -12848,16 +12928,23 @@
             const workStartMins = timeStringToMinutes(scheduleSettings.workStart || "08:00");
             const workEndMins = timeStringToMinutes(scheduleSettings.workEnd || "18:00");
 
+            const todaySchedule = new Date();
+            todaySchedule.setHours(0, 0, 0, 0);
+
             for (let dayIdx = 0; dayIdx < 6; dayIdx++) {
                 const currentDay = new Date(monday);
                 currentDay.setDate(monday.getDate() + dayIdx);
+                currentDay.setHours(0, 0, 0, 0);
                 const dayNum = currentDay.getDate();
                 const monthNameFull = monthsFull[currentDay.getMonth()];
                 const monthNameShort = monthsNamesShort[currentDay.getMonth()];
                 const formattedDateFull = `${dayNum.toString().padStart(2, '0')} de ${monthNameFull} de ${currentDay.getFullYear()}`;
                 const formattedDateShort = `${dayNum.toString().padStart(2, '0')} de ${monthNameShort} de ${currentDay.getFullYear()}`;
 
-                // Find appointments for this day
+                const isPastDay = currentDay < todaySchedule;
+                const isToday = currentDay.getTime() === todaySchedule.getTime();
+
+                // Find appointments for this day (preserving full history of past appointments)
                 const activeAppts = getActiveNutriAppointmentsList();
                 const dayAppts = activeAppts.filter(a => {
                     if (!a || !a.date || a.status === 'Cancelado' || a.status === 'cancelled') return false;
@@ -12870,30 +12957,39 @@
                 totalApptsCount += dayAppts.length;
 
                 let colHtml = `
-                    <div class="schedule-day-column">
-                        <div class="schedule-day-header ${dayIdx === 0 && currentScheduleWeekOffset === 0 ? 'today' : ''}">
-                            <h4 class="schedule-day-title">${dayNames[dayIdx]}, ${dayNum} ${monthNameShort}</h4>
-                            <span class="schedule-day-subtitle">${dayAppts.length} consulta${dayAppts.length !== 1 ? 's' : ''} agendada${dayAppts.length !== 1 ? 's' : ''}</span>
+                    <div class="schedule-day-column ${isPastDay ? 'past-day' : ''}">
+                        <div class="schedule-day-header ${isToday ? 'today' : isPastDay ? 'past-day' : ''}">
+                            <h4 class="schedule-day-title">${dayNames[dayIdx]}, ${dayNum} ${monthNameShort} ${isToday ? '• Hoje' : ''}</h4>
+                            <span class="schedule-day-subtitle">${dayAppts.length} consulta${dayAppts.length !== 1 ? 's' : ''} ${isPastDay ? 'registrada' + (dayAppts.length !== 1 ? 's' : '') : 'agendada' + (dayAppts.length !== 1 ? 's' : '')}</span>
                         </div>
                 `;
 
                 let pointerMins = workStartMins;
 
                 if (dayAppts.length === 0) {
-                    totalSafeFreeSlots += 3;
-                    colHtml += `
-                        <div class="free-slot-card" onclick="openScheduleAppointmentForDay('${currentDay.toISOString().split('T')[0]}', '${scheduleSettings.workStart || '08:00'}')">
-                            <span class="free-slot-time">🟢 08:00 - 12:00</span>
-                            <button class="free-slot-btn">+ Agendar</button>
-                        </div>
-                        <div class="free-slot-card" onclick="openScheduleAppointmentForDay('${currentDay.toISOString().split('T')[0]}', '14:00')">
-                            <span class="free-slot-time">🟢 14:00 - 18:00</span>
-                            <button class="free-slot-btn">+ Agendar</button>
-                        </div>
-                        <div style="text-align: center; color: var(--text-light); font-size: 0.75rem; padding: 1.5rem 0.5rem;">
-                            Dia 100% livre para novos agendamentos.
-                        </div>
-                    `;
+                    if (isPastDay) {
+                        colHtml += `
+                            <div class="free-slot-card past-closed" style="text-align: center; padding: 1.5rem 0.75rem;">
+                                <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-light); display: block; margin-bottom: 0.25rem;">Dia Encerrado</span>
+                                <span style="font-size: 0.72rem; color: var(--text-light); display: block;">Histórico registrado</span>
+                            </div>
+                        `;
+                    } else {
+                        totalSafeFreeSlots += 3;
+                        colHtml += `
+                            <div class="free-slot-card" onclick="openScheduleAppointmentForDay('${currentDay.toISOString().split('T')[0]}', '${scheduleSettings.workStart || '08:00'}')">
+                                <span class="free-slot-time">🟢 08:00 - 12:00</span>
+                                <button class="free-slot-btn">+ Agendar</button>
+                            </div>
+                            <div class="free-slot-card" onclick="openScheduleAppointmentForDay('${currentDay.toISOString().split('T')[0]}', '14:00')">
+                                <span class="free-slot-time">🟢 14:00 - 18:00</span>
+                                <button class="free-slot-btn">+ Agendar</button>
+                            </div>
+                            <div style="text-align: center; color: var(--text-light); font-size: 0.75rem; padding: 1.5rem 0.5rem;">
+                                Dia 100% livre para novos agendamentos.
+                            </div>
+                        `;
+                    }
                 } else {
                     dayAppts.forEach(appt => {
                         const apptStartMins = timeStringToMinutes(appt.time);
@@ -12911,9 +13007,9 @@
                             onlineApptsCount++;
                         }
 
-                        // Check for free slot before travel/appointment starts
+                        // Check for free slot before travel/appointment starts (only for present/future days)
                         const effectiveBlockStart = apptStartMins - travel;
-                        if (effectiveBlockStart > pointerMins) {
+                        if (!isPastDay && effectiveBlockStart > pointerMins) {
                             const gapMins = effectiveBlockStart - pointerMins;
                             if (gapMins >= 45) {
                                 totalSafeFreeSlots++;
@@ -12935,26 +13031,34 @@
                             `;
                         }
 
-                        // 2. Appointment Card
+                        // 2. Appointment Card (Historical styling if in past)
                         const apptClass = isPresencial ? 'presencial' : 'online';
                         const typeLabel = isPresencial ? '🏥 Presencial' : '💻 Telemedicina';
+                        const isCompletedStatus = (appt.status || '').toLowerCase().includes('realizado') || (appt.status || '').toLowerCase().includes('atendido');
+                        const statusBadge = isPastDay 
+                            ? `<span style="font-size: 0.68rem; background: #e2e8f0; color: #475569; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">${isCompletedStatus ? '✓ Realizado' : 'Histórico'}</span>`
+                            : '';
+
                         const actionBtn = isPresencial 
                             ? `<button class="btn-action btn-action-secondary" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; border-color: var(--primary-olive); color: var(--primary-olive);" onclick="openPatientProfileModal('${appt.patientName}')">Prontuário</button>`
-                            : `<button class="btn-action btn-action-primary" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; background: #3b82f6;" onclick="startTelemedCall('${appt.patientName}')">Iniciar Vídeo</button>`;
+                            : (isPastDay 
+                                ? `<button class="btn-action btn-action-secondary" style="font-size: 0.72rem; padding: 0.25rem 0.5rem;" onclick="openPatientProfileModal('${appt.patientName}')">Prontuário</button>`
+                                : `<button class="btn-action btn-action-primary" style="font-size: 0.72rem; padding: 0.25rem 0.5rem; background: #3b82f6;" onclick="startTelemedCall('${appt.patientName}')">Iniciar Vídeo</button>`);
 
                         colHtml += `
-                            <div class="schedule-appt-card ${apptClass}">
+                            <div class="schedule-appt-card ${apptClass} ${isPastDay ? 'history-past' : ''}">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.35rem;">
                                     <span class="appt-time-badge ${apptClass}">
                                         ${appt.time} - ${formatMinutesToTime(apptEndMins)} (${apptDuration}m)
                                     </span>
-                                    <button onclick="deleteAppointment('${appt.id}')" style="background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 0.85rem; line-height: 1;" title="Cancelar / Desmarcar">✕</button>
+                                    ${statusBadge}
+                                    ${!isPastDay ? `<button onclick="deleteAppointment('${appt.id}')" style="background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 0.85rem; line-height: 1;" title="Cancelar / Desmarcar">✕</button>` : ''}
                                 </div>
                                 <strong style="color: var(--primary-slate); font-size: 0.88rem; display: block; margin-bottom: 0.2rem;">${appt.patientName}</strong>
                                 <span style="font-size: 0.75rem; color: var(--text-light); display: block; margin-bottom: 0.5rem;">${typeLabel} ${appt.location ? '• ' + appt.location.split('-')[0] : ''}</span>
                                 <div style="display: flex; gap: 0.35rem; align-items: center;">
                                     ${actionBtn}
-                                    <button class="btn-action btn-action-secondary" style="font-size: 0.72rem; padding: 0.25rem 0.45rem;" onclick="openRescheduleAppointmentModal('${appt.id}')">Reagendar</button>
+                                    ${!isPastDay ? `<button class="btn-action btn-action-secondary" style="font-size: 0.72rem; padding: 0.25rem 0.45rem;" onclick="openRescheduleAppointmentModal('${appt.id}')">Reagendar</button>` : ''}
                                 </div>
                             </div>
                         `;
@@ -13016,10 +13120,18 @@
         }
 
         function openScheduleAppointmentForDay(dateIso, timeDefault) {
+            const todayIso = new Date().toISOString().split('T')[0];
+            if (dateIso && dateIso < todayIso) {
+                showToast("⚠️ Não é possível agendar para uma data anterior ao dia de hoje.", "warning");
+                return;
+            }
             openScheduleAppointmentModal();
             const dateInput = document.getElementById('sched-date');
             const timeInput = document.getElementById('sched-time');
-            if (dateInput) dateInput.value = dateIso;
+            if (dateInput) {
+                dateInput.value = dateIso;
+                dateInput.min = todayIso;
+            }
             if (timeInput) timeInput.value = timeDefault;
         }
 
@@ -13046,10 +13158,12 @@
             const selectEl = document.getElementById('sched-patient-select');
             if (selectEl) selectEl.disabled = false;
 
-            // Set default date to today or June 22
             const today = new Date().toISOString().split('T')[0];
             const dateInput = document.getElementById('sched-date');
-            if (dateInput) dateInput.value = today;
+            if (dateInput) {
+                dateInput.value = today;
+                dateInput.min = today;
+            }
             
             const timeInput = document.getElementById('sched-time');
             if (timeInput) timeInput.value = "14:00";
@@ -13295,6 +13409,11 @@
             event.preventDefault();
             const patientName = document.getElementById('sched-patient-select').value;
             const dateInput = document.getElementById('sched-date').value; // YYYY-MM-DD
+            const todayIso = new Date().toISOString().split('T')[0];
+            if (dateInput && dateInput < todayIso) {
+                showToast("⚠️ Não é possível agendar uma nova consulta em data anterior à de hoje.", "error");
+                return;
+            }
             const timeInput = document.getElementById('sched-time').value; // HH:MM
             const type = document.getElementById('sched-type').value;
             const duration = parseInt(document.getElementById('sched-duration').value || 75, 10);

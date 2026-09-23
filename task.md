@@ -1,3 +1,41 @@
+# Backlog: Calendário Dinâmico em Tempo Real, Bloqueio de Datas Passadas & Preservação do Histórico (EP-17 Story 1)
+
+Esta história ajusta a sincronização temporal dos calendários e agendas da plataforma:
+1. **Início na Data Atual Real**: A agenda da nutricionista e o agendamento do paciente iniciam na data/semana/mês corrente real do sistema (eliminando âncoras estáticas em Julho/2026).
+2. **Bloqueio de Agendamentos em Datas Passadas**: Não é permitido criar novas consultas para datas anteriores ao dia de hoje (nem na agenda semanal da nutricionista, nem no modal de agendamento, nem no calendário de agendamento do paciente).
+3. **Preservação Integral do Histórico**: Consultas realizadas ou agendadas em datas anteriores permanecem salvas no sistema e visíveis no histórico de atendimentos e prontuários da nutricionista e do paciente.
+4. **Navegação Intuitiva**: O seletor de meses do paciente oferece os meses a partir do mês atual para frente, e os dias anteriores a hoje no mês corrente ficam desabilitados/bloqueados para seleção.
+
+---
+
+## 🛠️ Implementation Checklist
+
+### 1. Product Owner (PO Requirements & Acceptance Criteria)
+- [x] Especificar regra de cálculo dinâmico da semana corrente (`new Date()`) para a agenda da nutricionista.
+- [x] Definir bloqueio de agendamento para datas no passado (`< today`).
+- [x] Garantir que consultas passadas continuem salvas no `appointmentsList` e visíveis no histórico.
+- [x] Garantir 100% de aprovação na suíte de testes unitários e E2E.
+
+### 2. CSS Styling (UX Specialist)
+- [x] Estilizar dias passados no calendário (`.calendar-day.past`, `.calendar-day.disabled.past`) e destaque do dia atual (`.calendar-day.today-highlight`).
+- [x] Estilizar cards de dias encerrados/histórico na agenda semanal (`.free-slot-card.past-closed`).
+- [x] Sincronizar alterações com `deploy-vercel/style.css`.
+
+### 3. HTML & JS Logic (Senior Developer)
+- [x] Atualizar `getMondayOfCurrentWeek(offset)` para calcular a segunda-feira da semana atual em tempo real baseada em `new Date()`.
+- [x] Atualizar variáveis de agendamento (`bookingSelectedYear`, `bookingSelectedMonth`, `bookingSelectedDay`) para inicializarem com o dia/mês/ano correntes.
+- [x] Atualizar `renderWeeklySchedule()` para identificar dias passados, desabilitar botões `+ Agendar` no passado e destacar o dia atual.
+- [x] Atualizar `renderPatientBookingTab()` para gerar opções de meses de hoje em diante, bloquear dias passados no calendário e impedir navegação para meses anteriores.
+- [x] Definir `min` no input `#sched-date` do modal de agendamento e validar em `saveNewAppointment()` e `confirmBooking()`.
+- [x] Sincronizar alterações com `deploy-vercel/index.html`.
+
+### 4. QA Validation Specs (QA Tester)
+- [x] Criar teste Playwright E2E `tests/e2e/test-realtime-calendar-past-lock.spec.js`.
+- [x] Validar que `npm.cmd test` passa 25/25 testes.
+- [x] Validar que `npx.cmd playwright test` passa sem regressões.
+
+---
+
 # Backlog: Exibição de Consulta na Home, Disparos Multicanal (WhatsApp/E-mail) & Loop Anti-No-Show (EP-16 Story 1)
 
 Esta história implementa a gestão completa do ciclo de vida das consultas agendadas:

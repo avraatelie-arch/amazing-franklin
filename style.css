@@ -1891,6 +1891,60 @@ h1, h2, h3, h4 {
     color: #CCC;
     cursor: not-allowed;
 }
+.calendar-day.disabled,
+.calendar-day.past {
+    color: #A0AEC0 !important;
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    text-decoration: line-through !important;
+    background: transparent !important;
+}
+
+.calendar-day.today-highlight {
+    border: 1.5px solid var(--primary-olive);
+    position: relative;
+    font-weight: 700;
+}
+
+.calendar-day.today-highlight::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--primary-olive);
+}
+
+.calendar-day.active.today-highlight::after {
+    background: #FFF;
+}
+
+.free-slot-card.past-closed {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px dashed rgba(0, 0, 0, 0.12);
+    color: var(--text-light);
+    cursor: default;
+    opacity: 0.75;
+    pointer-events: none;
+}
+
+.schedule-day-column.past-day {
+    opacity: 0.88;
+    background: rgba(0, 0, 0, 0.015);
+}
+
+.schedule-day-header.past-day {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.schedule-appt-card.history-past {
+    border-left: 3px solid #94a3b8;
+    background: #f8fafc;
+}
 
 .time-slots {
     display: grid;
